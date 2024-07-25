@@ -347,11 +347,14 @@ function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocI
             echo($trgText);
             echo('</td><td class="centeralign">'.implode('&nbsp;',$trgIDs));
 
-            if ($showMyRatings){
+            $textOK = ( strpos($srcText, 'SENTENCE NOT FOUND') === false &&
+                        strpos($trgText, 'SENTENCE NOT FOUND') === false );
+
+            if ($showMyRatings && $textOK){
                 echo('</td><td class="centeralign">');
                 print_rating_stars($bitextID,$linkID);
             }
-            if ($showRatings){
+            if ($showRatings && $textOK){
                 echo('</td><td class="centeralign">');
                 print_average_ratings($bitextID,$linkID);
             }
