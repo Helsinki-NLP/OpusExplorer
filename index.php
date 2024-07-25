@@ -59,9 +59,24 @@ $toDocID   = get_param('toDocID');
 
 $showScores = get_param('showScores',1);
 $showLengthRatio = get_param('showLengthRatio',0);
+$showRatings = get_param('showRatings',0);
+$showMyRatings = get_param('showMyRatings',1);
 
 $showMaxAlignments = get_param('showMaxAlignments',$SHOW_ALIGNMENTS_LIMIT);
 $showMaxDocuments = get_param('showMaxDocuments',$DOCUMENT_LIST_LIMIT);
+
+
+## check whether we have a new rating to take care of
+
+$linkID = get_param('linkID',0);
+$rating = get_param('rating',0);
+
+if ($linkID){
+    add_alignment_rating($langpair,$linkID,$_SESSION['user'],$rating);
+    delete_param('linkID');
+    delete_param('rating');
+}
+
 
 /*
 $langpair = 'fi-sv';
@@ -112,8 +127,6 @@ if ($srclang && $trglang){
 
     $srcDbFile    = $DB_DIR.$srclang.'.db';
     $trgDbFile    = $DB_DIR.$trglang.'.db';
-    // $srcIdxDbFile = file_exists($DB_DIR.$srclang.'.ids.db') ? $DB_DIR.$srclang.'.ids.db' : $DB_DIR.$srclang.'.idx.db';
-    // $trgIdxDbFile = file_exists($DB_DIR.$trglang.'.ids.db') ? $DB_DIR.$trglang.'.ids.db' : $DB_DIR.$trglang.'.idx.db';
     $srcIdxDbFile = $DB_DIR.$srclang.'.ids.db';
     $trgIdxDbFile = $DB_DIR.$trglang.'.ids.db';
     $algDbFile    = $DB_DIR.$langpair.'.db';
@@ -162,51 +175,54 @@ function get_bitextid($corpus, $version, $fromDoc, $toDoc){
     return undef;
 }
 
-function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocID=0, $bitextID=0, $type='all', $offset=0){
-    global $algDBH, $srcDBH, $srcIdxDBH, $trgDBH, $trgIdxDBH;
-    global $showMaxAlignments, $ALIGN_TYPES;
-    global $showScores, $showLengthRatio;
 
-    if (!$bitextID){
-        $bitextID = get_bitextid($corpus, $version, $fromDoc, $toDoc);
-        if ($bitextID){
-            set_param('bitextID',$bitextID);
-        }
-    }
+////////////////////
+// print bitext display options
+///////////////////
+
+function bitext_display_options(){
+    global $showScores, $showLengthRatio, $showRatings, $showMyRatings;
     
-    if ($bitextID){
-        $conditions = "WHERE bitextID=$bitextID";
+    if ($showScores){
+        $query = make_query(['showScores' => 0]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide scores</a>');
     }
     else{
-        $conditions = "WHERE corpus='$corpus' AND version='$version' AND fromDoc='$fromDoc' AND toDoc='$toDoc'";
+        $query = make_query(['showScores' => 1]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show scores</a>');
     }
-
-    if ($type){
-        if ($type == 'other'){
-            foreach ($ALIGN_TYPES as $type){
-                $conditions .= " AND NOT alignType='$type'";
-            }
-        }
-        else{
-            $conditions .= " AND alignType='$type'";
-        }
-    }
-    $limit = "LIMIT $showMaxAlignments";
-    if ($offset){
-        $limit .= " OFFSET $offset";
-    }
-
-    if ($bitextID){
-        $results = $algDBH->query("SELECT srcIDs,trgIDs,alignerScore FROM links $conditions ORDER BY rowid $limit");
+    if ($showLengthRatio){
+        $query = make_query(['showLengthRatio' => 0]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide length ratio</a>');
     }
     else{
-        $results = $algDBH->query("SELECT srcIDs,trgIDs,alignerScore FROM alignments $conditions ORDER BY rowid $limit");
+        $query = make_query(['showLengthRatio' => 1]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show length ratio</a>');
     }
+    if ($showRatings){
+        $query = make_query(['showRatings' => 0]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide user ratings</a>');
+    }
+    else{
+        $query = make_query(['showRatings' => 1]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show user ratings</a>');
+    }
+    if ($showMyRatings){
+        $query = make_query(['showMyRatings' => 0]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide my ratings</a>');
+    }
+    else{
+        $query = make_query(['showMyRatings' => 1]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show my ratings</a>');
+    }
+}
 
-    ////////////////////
-    // navigation bar
-    ///////////////////
-    
+////////////////////
+// print bitext navigation bar
+///////////////////
+
+function bitext_navigation($offset, $showMaxAlignments){
+
     $lastentry = $offset + $showMaxAlignments;
 
     if ($offset){
@@ -225,41 +241,67 @@ function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocI
     $query = make_query(['offset' => $lastentry]);
     echo(' / <a id="next" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> next</a>');
 
-    ////////////////////
-    // display options
-    ///////////////////
+}
 
-    if ($showScores){
-        $query = make_query(['showScores' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide scores</a>');
+function get_alignments($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocID=0, $bitextID=0, $type='all', $offset=0){
+    global $algDBH, $showMaxAlignments, $ALIGN_TYPES;
+    
+    if ($bitextID){
+        $conditions = "WHERE bitextID=$bitextID";
+        $table = 'links';
     }
     else{
-        $query = make_query(['showScores' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show scores</a>');
+        $conditions = "WHERE corpus='$corpus' AND version='$version' AND fromDoc='$fromDoc' AND toDoc='$toDoc'";
+        $table = 'alignments';
     }
-    if ($showLengthRatio){
-        $query = make_query(['showLengthRatio' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide length ratio</a>');
+    if ($type){
+        if ($type == 'other'){
+            foreach ($ALIGN_TYPES as $type){
+                $conditions .= " AND NOT alignType='$type'";
+            }
+        }
+        else{
+            $conditions .= " AND alignType='$type'";
+        }
     }
-    else{
-        $query = make_query(['showLengthRatio' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show length ratio</a>');
+    $limit = "LIMIT $showMaxAlignments";
+    if ($offset){
+        $limit .= " OFFSET $offset";
+    }
+    return $algDBH->query("SELECT srcIDs,trgIDs,alignerScore,rowid FROM $table $conditions ORDER BY rowid $limit");
+
+}
+
+function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocID=0, $bitextID=0, $type='all', $offset=0){
+    global $srcDBH, $srcIdxDBH, $trgDBH, $trgIdxDBH;
+    global $showMaxAlignments, $showScores, $showLengthRatio, $showRatings, $showMyRatings;
+
+    if (! $bitextID){
+        $bitextID = get_bitextid($corpus, $version, $fromDoc, $toDoc);
+        if ($bitextID) set_param('bitextID',$bitextID);
     }
 
-
-    //////////////////
+    $results = get_alignments($corpus, $version, $fromDoc, $toDoc, $fromDocID, $toDocID, $bitextID, $type, $offset);
 
     if ($results){
+
+        bitext_navigation($offset, $showMaxAlignments);
+        bitext_display_options();
+        
         echo('<table class="bitext">');
         echo("<tr><th>IDs</th><th>$fromDoc</th>");
         if ($showScores) echo('<th>score</th>');
         if ($showLengthRatio) echo('<th>ratio</th>');
-        echo("<th>$toDoc</th><th>IDs</th></tr>");
+        echo("<th>$toDoc</th><th>IDs</th>");
+        if ($showMyRatings) echo('<th>my ratings</th>');
+        if ($showRatings) echo('<th>ratings</th>');
+        echo("</tr>");
         $i = 0;
         while ($row = $results->fetchArray(SQLITE3_NUM)) {
             $i++;
             $srcIDs = explode(' ',$row[0]);
             $trgIDs = explode(' ',$row[1]);
+            $linkID = $row[3];
             
             $srcSents = array();
             foreach ($srcIDs as $srcID){
@@ -275,6 +317,7 @@ function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocI
             echo('<tr><td class="centeralign">');
             echo(implode('&nbsp;',$srcIDs).'</td><td class="rightalign">');
             echo($srcText);
+            
             if ($showScores){
                 $score = $row[2];
                 $color = score_color($score);
@@ -291,10 +334,20 @@ function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocI
                 $pretty_ratio = sprintf('%5.3f',$ratio);
                 echo("</td><td bgcolor='$color' class='centeralign'>$pretty_ratio");
             }
+            
             echo('</td><td class="leftalign">');
             echo($trgText);
             echo('</td><td class="centeralign">'.implode('&nbsp;',$trgIDs));
-            # echo("</td><td class=\"centeralign\">$score");
+
+            if ($showMyRatings){
+                echo('</td><td class="centeralign">');
+                print_rating_stars($linkID);
+            }
+            if ($showRatings){
+                echo('</td><td class="centeralign">');
+                print_average_ratings($linkID);
+            }
+            
             echo('</td></tr>'."\n");
         }
         echo('</table>');
@@ -305,6 +358,75 @@ function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocI
         }
     }
 }
+
+function print_rating_stars($linkID){
+    global $langpair;
+    $rating = get_alignment_rating($langpair,$linkID,$_SESSION['user']);
+    for ($x=1;$x<=$rating;$x++){
+        $query = make_query(['rating' => $x, 'linkID' => $linkID]);
+        echo '<a style="text-decoration: none; color: #ffbb00;" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">★</a>';
+    }
+    if ($rating < 5){
+        for ($y=$x;$y<=5;$y++){
+            $query = make_query(['rating' => $y, 'linkID' => $linkID]);
+            echo '<a style="text-decoration: none; color: black;" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">☆</a>';
+        }
+    }
+}
+
+function print_average_ratings($linkID){
+    global $langpair;
+    $rating = get_alignment_rating($langpair,$linkID);
+    echo '<span style="color: #ffbb00;">';
+    for ($x=1;$x<=$rating+0.25;$x++) echo '★';
+    if ($rating >= $x-0.75 && $rating <= $x-0.25){ echo '☆';$x++; }
+    echo '</span>';
+    if ($rating < 5){
+        for ($y=$x;$y<=5;$y++) echo '☆';
+    }
+}
+
+function get_alignment_rating($langpair,$linkID,$user=''){
+    global $DB_DIR;
+    $algRatingDB = $DB_DIR.$langpair.'.stars.db';
+    if (! file_exists($algRatingDB) ) return 0;
+
+    $DBH = new SQLite3($algRatingDB,SQLITE3_OPEN_READONLY);
+    if ($user){
+        $results = $DBH->query("SELECT rating FROM ratings WHERE langpair='$langpair' AND linkID=$linkID AND user='$user'");
+        if ($results){
+            while ($row = $results->fetchArray(SQLITE3_NUM)) {
+                return $row[0];
+            }
+        }
+    }
+    else{
+        $results = $DBH->query("SELECT AVG(rating) FROM ratings WHERE langpair='$langpair' AND linkID=$linkID");
+        if ($results){
+            while ($row = $results->fetchArray(SQLITE3_NUM)) {
+                return $row[0];
+            }
+        }
+    }
+    return 0;
+}
+
+
+function add_alignment_rating($langpair,$linkID,$user,$rating){
+    global $DB_DIR;
+    $algRatingDB = $DB_DIR.$langpair.'.stars.db';
+    if (! file_exists($algRatingDB) ){
+        $DBH = new SQLite3($algRatingDB);
+        $DBH->exec('CREATE TABLE IF NOT EXISTS ratings (langpair TEXT, linkID INTEGER, user TEXT, rating INTEGER)');
+        $DBH->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_ratings ON ratings (langpair, linkID, user)');
+    }
+    else{
+        $DBH = new SQLite3($algRatingDB);
+    }
+    $DBH->exec("UPDATE OR IGNORE ratings SET rating=$rating WHERE langpair='$langpair' AND linkID=$linkID AND user='$user'");
+    $DBH->exec("INSERT OR IGNORE INTO ratings (langpair, linkID, user, rating) VALUES ('$langpair',$linkID,'$user',$rating)");
+}
+
 
 function get_sentence_id($SentDBH, $IdxDBH, $corpus, $version, $document, $sentID, $docID=0){
     if ($docID){
