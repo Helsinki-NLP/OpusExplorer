@@ -71,8 +71,8 @@ $showMaxDocuments = get_param('showMaxDocuments',$DOCUMENT_LIST_LIMIT);
 $linkID = get_param('linkID',0);
 $rating = get_param('rating',0);
 
-if ($linkID){
-    add_alignment_rating($langpair,$linkID,$_SESSION['user'],$rating);
+if ($rating){
+    add_alignment_rating($bitextID,$linkID,$_SESSION['user'],$rating);
     delete_param('linkID');
     delete_param('rating');
 }
@@ -269,7 +269,6 @@ function get_alignments($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDo
         $limit .= " OFFSET $offset";
     }
     return $algDBH->query("SELECT srcIDs,trgIDs,alignerScore,rowid FROM $table $conditions ORDER BY rowid $limit");
-
 }
 
 function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocID=0, $bitextID=0, $type='all', $offset=0){
@@ -287,6 +286,15 @@ function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocI
 
         bitext_navigation($offset, $showMaxAlignments);
         bitext_display_options();
+        if ($showMyRatings){
+            echo(" / rate the overall bitext quality: ");
+            print_rating_stars($bitextID,0);
+        }
+        if ($showRatings){
+            echo(" (");
+            print_average_ratings($bitextID,0);
+            echo(")");
+        }
         
         echo('<table class="bitext">');
         echo("<tr><th>IDs</th><th>$fromDoc</th>");
@@ -341,11 +349,11 @@ function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocI
 
             if ($showMyRatings){
                 echo('</td><td class="centeralign">');
-                print_rating_stars($linkID);
+                print_rating_stars($bitextID,$linkID);
             }
             if ($showRatings){
                 echo('</td><td class="centeralign">');
-                print_average_ratings($linkID);
+                print_average_ratings($bitextID,$linkID);
             }
             
             echo('</td></tr>'."\n");
@@ -359,24 +367,22 @@ function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocI
     }
 }
 
-function print_rating_stars($linkID){
-    global $langpair;
-    $rating = get_alignment_rating($langpair,$linkID,$_SESSION['user']);
+function print_rating_stars($bitextID,$linkID){
+    $rating = get_alignment_rating($bitextID,$linkID,$_SESSION['user']);
     for ($x=1;$x<=$rating;$x++){
-        $query = make_query(['rating' => $x, 'linkID' => $linkID]);
+        $query = make_query(['rating' => $x, 'bitextID' => $bitextID, 'linkID' => $linkID]);
         echo '<a style="text-decoration: none; color: #ffbb00;" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">★</a>';
     }
     if ($rating < 5){
         for ($y=$x;$y<=5;$y++){
-            $query = make_query(['rating' => $y, 'linkID' => $linkID]);
+            $query = make_query(['rating' => $y, 'bitextID' => $bitextID, 'linkID' => $linkID]);
             echo '<a style="text-decoration: none; color: black;" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">☆</a>';
         }
     }
 }
 
-function print_average_ratings($linkID){
-    global $langpair;
-    $rating = get_alignment_rating($langpair,$linkID);
+function print_average_ratings($bitextID,$linkID){
+    $rating = get_alignment_rating($bitextID,$linkID);
     echo '<span style="color: #ffbb00;">';
     for ($x=1;$x<=$rating+0.25;$x++) echo '★';
     if ($rating >= $x-0.75 && $rating <= $x-0.25){ echo '☆';$x++; }
@@ -386,14 +392,14 @@ function print_average_ratings($linkID){
     }
 }
 
-function get_alignment_rating($langpair,$linkID,$user=''){
-    global $DB_DIR;
+function get_alignment_rating($bitextID,$linkID,$user=''){
+    global $DB_DIR, $langpair;
     $algRatingDB = $DB_DIR.$langpair.'.stars.db';
     if (! file_exists($algRatingDB) ) return 0;
 
     $DBH = new SQLite3($algRatingDB,SQLITE3_OPEN_READONLY);
     if ($user){
-        $results = $DBH->query("SELECT rating FROM ratings WHERE langpair='$langpair' AND linkID=$linkID AND user='$user'");
+        $results = $DBH->query("SELECT rating FROM ratings WHERE bitextID=$bitextID AND linkID=$linkID AND user='$user'");
         if ($results){
             while ($row = $results->fetchArray(SQLITE3_NUM)) {
                 return $row[0];
@@ -401,7 +407,7 @@ function get_alignment_rating($langpair,$linkID,$user=''){
         }
     }
     else{
-        $results = $DBH->query("SELECT AVG(rating) FROM ratings WHERE langpair='$langpair' AND linkID=$linkID");
+        $results = $DBH->query("SELECT AVG(rating) FROM ratings WHERE bitextID=$bitextID AND linkID=$linkID");
         if ($results){
             while ($row = $results->fetchArray(SQLITE3_NUM)) {
                 return $row[0];
@@ -412,19 +418,19 @@ function get_alignment_rating($langpair,$linkID,$user=''){
 }
 
 
-function add_alignment_rating($langpair,$linkID,$user,$rating){
-    global $DB_DIR;
+function add_alignment_rating($bitextID,$linkID,$user,$rating){
+    global $DB_DIR, $langpair;
     $algRatingDB = $DB_DIR.$langpair.'.stars.db';
     if (! file_exists($algRatingDB) ){
         $DBH = new SQLite3($algRatingDB);
-        $DBH->exec('CREATE TABLE IF NOT EXISTS ratings (langpair TEXT, linkID INTEGER, user TEXT, rating INTEGER)');
-        $DBH->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_ratings ON ratings (langpair, linkID, user)');
+        $DBH->exec('CREATE TABLE IF NOT EXISTS ratings (bitextID INTEGER, linkID INTEGER, user TEXT, rating INTEGER)');
+        $DBH->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_ratings ON ratings (bitextID, linkID, user)');
     }
     else{
         $DBH = new SQLite3($algRatingDB);
     }
-    $DBH->exec("UPDATE OR IGNORE ratings SET rating=$rating WHERE langpair='$langpair' AND linkID=$linkID AND user='$user'");
-    $DBH->exec("INSERT OR IGNORE INTO ratings (langpair, linkID, user, rating) VALUES ('$langpair',$linkID,'$user',$rating)");
+    $DBH->exec("UPDATE OR IGNORE ratings SET rating=$rating WHERE bitextID=$bitextID AND linkID=$linkID AND user='$user'");
+    $DBH->exec("INSERT OR IGNORE INTO ratings (bitextID, linkID, user, rating) VALUES ($bitextID,$linkID,'$user',$rating)");
 }
 
 
