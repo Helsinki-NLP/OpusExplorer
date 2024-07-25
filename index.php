@@ -653,10 +653,12 @@ function find_bitext_dbs($path){
     if ($handle = opendir($path)) {
         while (false !== ($entry = readdir($handle))) {
             if (substr($entry,-3) == '.db') {
-                $lang = basename($entry,'.db');
-                $parts = explode('-',$lang);
-                if (count($parts) == 2){
-                    array_push($langpairs,$lang);
+                if (substr($entry,-9) != '.stars.db') {
+                    $lang = basename($entry,'.db');
+                    $parts = explode('-',$lang);
+                    if (count($parts) == 2){
+                        array_push($langpairs,$lang);
+                    }
                 }
             }
         }
