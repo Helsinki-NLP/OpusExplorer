@@ -1,6 +1,7 @@
 <?php
 
-$DB_DIR = '/media/OPUS-MT/OpusIndex/';
+// $DB_DIR = '/media/OPUS-MT/OpusIndex/';
+$DB_DIR = '/media/OpusIndex/';
 
 $DOCUMENT_LIST_LIMIT = 25;
 $SHOW_ALIGNMENTS_LIMIT = 25;
@@ -102,8 +103,9 @@ function test_input($data) {
 
 
 function clear_session(){
-    cleanup_cache();
+    // cleanup_cache();
     $_SESSION = array();
+    // session_reset();
 }
 
 function score_color($score){
