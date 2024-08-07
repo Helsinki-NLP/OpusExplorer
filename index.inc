@@ -123,6 +123,8 @@ function get_target_document_id($corpus, $version, $document){
 function set_link_db($bitextID){
     global $DB_DIR, $langpair;
     global $algDbFile, $algStarsDbFile, $algDBH;
+    global $modifiedBitextExists, $modifiedBitext;
+    global $showModified, $tableStyle;
     
     $USER_DB_DIR = $DB_DIR.$_SESSION['user'].'/';
     $userAlgDbFile = $USER_DB_DIR.$langpair.'.db';
@@ -136,8 +138,12 @@ function set_link_db($bitextID){
                 $row = $results->fetchArray(SQLITE3_NUM);
                 if ( $row[0] ){
                     // echo("... set to user DBs ($userAlgStarsDbFile)");
-                    $algDBH = $userAlgDBH;
-                    $algStarsDbFile = $userAlgStarsDbFile;
+                    $modifiedBitextExists = true;
+                    if ($tableStyle == 'edit' || $showModified){
+                        $algDBH = $userAlgDBH;
+                        $algStarsDbFile = $userAlgStarsDbFile;
+                        $modifiedBitext = true;
+                    }
                 }
             }
         }
@@ -145,8 +151,10 @@ function set_link_db($bitextID){
 }
 
 
+
 function initialize_user_link_db($bitextID){
     global $DB_DIR, $langpair, $algDBH, $algStarsDbFile;
+    global $modifiedBitextExists, $modifiedBitext;
     
     $USER_DB_DIR = $DB_DIR.$_SESSION['user'].'/';
     if (! is_dir($USER_DB_DIR)) mkdir($USER_DB_DIR);
@@ -209,9 +217,13 @@ function initialize_user_link_db($bitextID){
     
     $algDBH = $userAlgDBH;
     $algStarsDbFile = $userAlgStarsDbFile;
+    $modifiedBitext = true;
+    $modifiedBitextExists = true;
 
     return $userAlgDBH;
 }
+
+
 
 function change_link($DBH, $oldLinkID){
 
@@ -220,58 +232,91 @@ function change_link($DBH, $oldLinkID){
         $row = $results->fetchArray(SQLITE3_NUM);
         $oldLinkSrc = $row[1];
         $oldLinkTrg = $row[2];
+
+        // delete a source sentence
         
-        $newLinkID = $_GET['to'];
+        if (isset($_GET['del-src'])){
+            delete_alignment_rating($oldLinkID);
+            $sentID = $_GET['del-src'];
+            $oldLinkIDs = explode(' ',$oldLinkSrc);
+            $newLinkIDs = array_diff($oldLinkIDs, array($sentID));
+            $newLink = implode(' ',$newLinkIDs);
+            $trgLinkIDs = explode(' ',$oldLinkTrg);
+            $algType = count($newLinkIDs).'-'.count($trgLinkIDs);
+            $DBH->exec("UPDATE links SET srcIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$oldLinkID");
+            return;
+        }
 
-        delete_alignment_rating($oldLinkID);
-        delete_alignment_rating($newLinkID);
-
-        $results = $DBH->query("SELECT * FROM links WHERE rowid=$newLinkID");
-        if ($results){
-            $row = $results->fetchArray(SQLITE3_NUM);
-            $newLinkSrc = $row[1];
-            $newLinkTrg = $row[2];
+        // delete a target sentence
         
-            if (isset($_GET['move-src'])){
-                $sentID = $_GET['move-src'];
-                $oldLinkIDs = explode(' ',$oldLinkSrc);
-                $newLinkIDs = array_diff($oldLinkIDs, array($sentID));
-                $newLink = implode(' ',$newLinkIDs);
-                $trgLinkIDs = explode(' ',$oldLinkTrg);
-                $algType = count($newLinkIDs).'-'.count($trgLinkIDs);
-                $DBH->exec("UPDATE links SET srcIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$oldLinkID"); 
-                
-                $newLinkIDs = explode(' ',$newLinkSrc);
-                if ($newLinkID > $oldLinkID)
-                    array_unshift($newLinkIDs,$sentID);
-                else
-                    array_push($newLinkIDs,$sentID);
-                $newLink = implode(' ',$newLinkIDs);
-                $trgLinkIDs = explode(' ',$newLinkTrg);
-                $algType = count($newLinkIDs).'-'.count($trgLinkIDs);
-                $DBH->exec("UPDATE links SET srcIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$newLinkID"); 
-            }
+        if (isset($_GET['del-trg'])){
+            delete_alignment_rating($oldLinkID);
+            $sentID = $_GET['del-trg'];
+            $oldLinkIDs = explode(' ',$oldLinkTrg);
+            $newLinkIDs = array_diff($oldLinkIDs, array($sentID));
+            $newLink = implode(' ',$newLinkIDs);
+            $srcLinkIDs = explode(' ',$oldLinkSrc);
+            $algType = count($srcLinkIDs).'-'.count($newLinkIDs);
+            $DBH->exec("UPDATE links SET trgIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$oldLinkID"); 
+            return;
+        }
 
+        
+        // move a sentence to another link
+
+        if (isset($_GET['move-src']) || isset($_GET['move-trg'])){
             
-            elseif (isset($_GET['move-trg'])){
-                $sentID = $_GET['move-trg'];
-                $oldLinkIDs = explode(' ',$oldLinkTrg);
-                $newLinkIDs = array_diff($oldLinkIDs, array($sentID));
-                $newLink = implode(' ',$newLinkIDs);
-                $srcLinkIDs = explode(' ',$oldLinkSrc);
-                $algType = count($srcLinkIDs).'-'.count($newLinkIDs);
-                $DBH->exec("UPDATE links SET trgIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$oldLinkID"); 
+            $newLinkID = $_GET['to'];
 
-                $newLinkIDs = explode(' ',$newLinkTrg);
-                if ($newLinkID > $oldLinkID)
-                    array_unshift($newLinkIDs,$sentID);
-                else
-                    array_push($newLinkIDs,$sentID);
-                $newLink = implode(' ',$newLinkIDs);
-                $srcLinkIDs = explode(' ',$newLinkTrg);
-                $algType = count($srcLinkIDs).'-'.count($newLinkIDs);
-                $DBH->exec("UPDATE links SET trgIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$newLinkID");
+            delete_alignment_rating($oldLinkID);
+            delete_alignment_rating($newLinkID);
 
+            $results = $DBH->query("SELECT * FROM links WHERE rowid=$newLinkID");
+            if ($results){
+                $row = $results->fetchArray(SQLITE3_NUM);
+                $newLinkSrc = $row[1];
+                $newLinkTrg = $row[2];
+
+                if (isset($_GET['move-src'])){
+                    $sentID = $_GET['move-src'];
+                    $oldLinkIDs = explode(' ',$oldLinkSrc);
+                    $newLinkIDs = array_diff($oldLinkIDs, array($sentID));
+                    $newLink = implode(' ',$newLinkIDs);
+                    $trgLinkIDs = explode(' ',$oldLinkTrg);
+                    $algType = count($newLinkIDs).'-'.count($trgLinkIDs);
+                    $DBH->exec("UPDATE links SET srcIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$oldLinkID"); 
+                
+                    $newLinkIDs = explode(' ',$newLinkSrc);
+                    if ($newLinkID > $oldLinkID)
+                        array_unshift($newLinkIDs,$sentID);
+                    else
+                        array_push($newLinkIDs,$sentID);
+                    $newLink = implode(' ',$newLinkIDs);
+                    $trgLinkIDs = explode(' ',$newLinkTrg);
+                    $algType = count($newLinkIDs).'-'.count($trgLinkIDs);
+                    $DBH->exec("UPDATE links SET srcIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$newLinkID"); 
+                }
+            
+                elseif (isset($_GET['move-trg'])){
+                    $sentID = $_GET['move-trg'];
+                    $oldLinkIDs = explode(' ',$oldLinkTrg);
+                    $newLinkIDs = array_diff($oldLinkIDs, array($sentID));
+                    $newLink = implode(' ',$newLinkIDs);
+                    $srcLinkIDs = explode(' ',$oldLinkSrc);
+                    $algType = count($srcLinkIDs).'-'.count($newLinkIDs);
+                    $DBH->exec("UPDATE links SET trgIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$oldLinkID"); 
+
+                    $newLinkIDs = explode(' ',$newLinkTrg);
+                    if ($newLinkID > $oldLinkID)
+                        array_unshift($newLinkIDs,$sentID);
+                    else
+                        array_push($newLinkIDs,$sentID);
+                    $newLink = implode(' ',$newLinkIDs);
+                    $srcLinkIDs = explode(' ',$newLinkTrg);
+                    $algType = count($srcLinkIDs).'-'.count($newLinkIDs);
+                    $DBH->exec("UPDATE links SET trgIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$newLinkID");
+
+                }
             }
         }
     }

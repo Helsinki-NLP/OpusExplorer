@@ -99,11 +99,16 @@ $showScores = get_param('showScores',1);
 $showLengthRatio = get_param('showLengthRatio',0);
 $showRatings = get_param('showRatings',0);
 $showMyRatings = get_param('showMyRatings',1);
+$showModified = get_param('showModified',1);
 
 $showMaxAlignments = get_param('showMaxAlignments',$SHOW_ALIGNMENTS_LIMIT);
 $showMaxDocuments = get_param('showMaxDocuments',$DOCUMENT_LIST_LIMIT);
 
 $tableStyle = get_param('style','horizontal');
+$allowEdit = in_array($corpus, $ALLOW_EDIT);
+
+$modifiedBitextExists = false;
+$modifiedBitext = false;
 
 
 ## check whether we have a new rating to take care of
@@ -139,22 +144,57 @@ $query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '',
 echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">OPUS</a> / ');
 
 if ($srclang && $trglang){
+
+    $srcDbFile      = $DB_DIR.$srclang.'.db';
+    $trgDbFile      = $DB_DIR.$trglang.'.db';
+    $srcIdxDbFile   = $DB_DIR.$srclang.'.ids.db';
+    $trgIdxDbFile   = $DB_DIR.$trglang.'.ids.db';
+    $algDbFile      = $DB_DIR.$langpair.'.db';
+    $algStarsDbFile = $DB_DIR.$langpair.'.stars.db';
+
+    $srcDBH    = new SQLite3($srcDbFile,SQLITE3_OPEN_READONLY);
+    $srcIdxDBH = new SQLite3($srcIdxDbFile,SQLITE3_OPEN_READONLY);
+    $trgDBH    = new SQLite3($trgDbFile,SQLITE3_OPEN_READONLY);
+    $trgIdxDBH = new SQLite3($trgIdxDbFile,SQLITE3_OPEN_READONLY);
+    $algDBH    = new SQLite3($algDbFile,SQLITE3_OPEN_READONLY);
+
     $query = make_query(['corpus' => '', 'fromDoc' => '', 'toDoc' => '', 'aligntype' => '', 'offset' => 0]);
     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$langpair.'</a> / ');
+    
     if ($corpus && $version){
         $query = make_query(['fromDoc' => '', 'toDoc' => '', 'aligntype' => '', 'offset' => 0]);
         echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.' / '.$version.'</a> / ');
+        
         if ($fromDoc && $toDoc){
+
+            if (! $bitextID){
+                $bitextID = get_bitextid($corpus, $version, $fromDoc, $toDoc);
+                if ($bitextID) set_param('bitextID',$bitextID);
+            }
+            set_link_db($bitextID);
+            
             $query = make_query(['aligntype' => '', 'offset' => 0]);
             echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$fromDoc.'</a> / ');
 
-            if ($tableStyle == 'edit'){
+            if ($tableStyle == 'edit' && $allowEdit){
                 $query = make_query(['style' => 'horizontal']);
-                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">switch off edit mode</a> / ');
+                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">stop editing</a> / ');
             }
             else{
-                $query = make_query(['style' => 'edit']);
-                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">switch on edit mode</a> / ');
+                if ($modifiedBitextExists){
+                    if ($showModified){
+                        $query = make_query(['showModified' => 0]);
+                        echo('modified / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">original</a> / ');
+                    }
+                    else{
+                        $query = make_query(['showModified' => 1]);
+                        echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">modified</a> / original / ');
+                    }
+                }
+                if ($allowEdit){
+                    $query = make_query(['style' => 'edit']);
+                    echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit mode</a> / ');
+                }
 
                 foreach ($ALIGN_TYPES as $type){
                     $query = make_query(['aligntype' => $type, 'offset' => 0]);
@@ -184,23 +224,7 @@ echo('</br><hr>');
 // content
 /////////////////////////////////////////////////////////////////
 
-if ($srclang && $trglang){
-
-    $srcDbFile      = $DB_DIR.$srclang.'.db';
-    $trgDbFile      = $DB_DIR.$trglang.'.db';
-    $srcIdxDbFile   = $DB_DIR.$srclang.'.ids.db';
-    $trgIdxDbFile   = $DB_DIR.$trglang.'.ids.db';
-    $algDbFile      = $DB_DIR.$langpair.'.db';
-    $algStarsDbFile = $DB_DIR.$langpair.'.stars.db';
-
-    $srcDBH    = new SQLite3($srcDbFile,SQLITE3_OPEN_READONLY);
-    $srcIdxDBH = new SQLite3($srcIdxDbFile,SQLITE3_OPEN_READONLY);
-    $trgDBH    = new SQLite3($trgDbFile,SQLITE3_OPEN_READONLY);
-    $trgIdxDBH = new SQLite3($trgIdxDbFile,SQLITE3_OPEN_READONLY);
-    $algDBH    = new SQLite3($algDbFile,SQLITE3_OPEN_READONLY);
-
-    // echo("---$algDbFile--");
-    
+if ($srclang && $trglang){    
     if ($corpus && $version){
         if ($fromDoc && $toDoc){
             //print_links($corpus, $version, $fromDoc, $toDoc);

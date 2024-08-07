@@ -21,6 +21,12 @@ $segmentFirstBorderColor = '#0a0';
 $segmentOtherBgColor = '#fcc';
 $segmentOtherBorderColor = 'red';
 
+$ALLOW_EDIT = array(
+    'OpenSubtitles',
+    'Europarl',
+    'QED'
+);
+
 
 function get_param($key, $default=''){
 
