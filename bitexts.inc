@@ -96,12 +96,19 @@ function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocI
     global $showMaxAlignments, $showScores, $showLengthRatio, $showRatings, $showMyRatings, $showEmpty;
     global $tableStyle, $allowEdit;
 
+    if (! $bitextID){
+        $bitextID = get_bitextid($corpus, $version, $fromDoc, $toDoc);
+        if ($bitextID) set_param('bitextID',$bitextID);
+        set_link_db($bitextID);
+    }
+
     if ($tableStyle == 'edit' && $allowEdit){
         $showEmpty = 1;
         $type = '';
         if (isset($_GET['changelink'])){
             $userAlgDBH = initialize_user_link_db($bitextID);
-            change_link($userAlgDBH, $_GET['changelink']);
+            // echo("change link ".$_GET['changelink']);
+            change_link($userAlgDBH, $bitextID, $_GET['changelink']);
         }
     }
 
