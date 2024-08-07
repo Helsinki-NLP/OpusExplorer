@@ -1,0 +1,281 @@
+<?php // -*-php-*-
+
+function get_bitextid($corpus, $version, $fromDoc, $toDoc){
+    global $algDBH;
+    
+    $results = $algDBH->query("SELECT rowid FROM bitexts WHERE corpus='$corpus' AND version='$version' AND fromDoc='$fromDoc' AND toDoc='$toDoc'");
+    if ($results){
+        while ($row = $results->fetchArray(SQLITE3_NUM)) {
+            return $row[0];
+        }
+    }
+    return undef;
+}
+
+
+function get_alignments($algDBH, $corpus, $version, $fromDoc, $toDoc,
+                        $fromDocID=0, $toDocID=0, $bitextID=0, $type='all', $offset=0){
+    
+    global $showEmpty, $showMaxAlignments, $ALIGN_TYPES;
+    
+    if ($bitextID){
+        $conditions = "WHERE bitextID=$bitextID";
+        $table = 'links';
+    }
+    else{
+        $conditions = "WHERE corpus='$corpus' AND version='$version' AND fromDoc='$fromDoc' AND toDoc='$toDoc'";
+        $table = 'alignments';
+    }
+    if ($type){
+        if ($type == 'other'){
+            foreach ($ALIGN_TYPES as $type){
+                $conditions .= " AND NOT alignType='$type'";
+            }
+        }
+        else{
+            $conditions .= " AND alignType='$type'";
+        }
+    }
+    if ((! $showEmpty) && ($type != 'other')){
+        $conditions .= " AND NOT alignType='0-1' AND NOT alignType='1-0'";
+    }
+    $limit = "LIMIT $showMaxAlignments";
+    if ($offset){
+        $limit .= " OFFSET $offset";
+    }
+    // echo("SELECT srcIDs,trgIDs,alignerScore,rowid FROM $table $conditions ORDER BY rowid $limit");
+    return $algDBH->query("SELECT srcIDs,trgIDs,alignerScore,rowid FROM $table $conditions ORDER BY rowid $limit");
+}
+
+
+function get_sentence_id($SentDBH, $IdxDBH, $corpus, $version, $document, $sentID, $docID=0){
+    if ($docID){
+        $results = $IdxDBH->query("SELECT id FROM sentids WHERE docID=$docID AND sentID='$sentID'");
+        if ($results){
+            while ($row = $results->fetchArray(SQLITE3_NUM)) {
+                return $row[0];
+            }
+        }
+    }
+
+    $condition = "WHERE corpus='$corpus' AND version='$version' AND document='$document' AND sentID='$sentID'";
+    $results = $IdxDBH->query("SELECT id FROM sentindex $condition");
+    if ($results){
+        while ($row = $results->fetchArray(SQLITE3_NUM)) {
+            return $row[0];
+        }
+    }
+    return 0;
+}
+
+function get_sentence($SentDBH, $IdxDBH, $corpus, $version, $document, $sentID, $docID=0){
+    if (!$sentID) return '';
+    $id = get_sentence_id($SentDBH, $IdxDBH, $corpus, $version, $document, $sentID, $docID);
+    if ($id){
+        $results = $SentDBH->query("SELECT sentence FROM sentences WHERE rowid='$id'");
+        if ($results){
+            while ($row = $results->fetchArray(SQLITE3_NUM)) {
+                return $row[0];
+            }
+        }
+    }
+    return 'SENTENCE NOT FOUND';
+}
+
+
+## could also use this query to see whether the documents table exists:
+## SELECT name FROM sqlite_master WHERE name='documents'
+
+function get_source_document_id($corpus, $version, $document){
+    global $srcIdxDbFile, $srcIdxDBH;
+    global $DB_DIR,$srclang;
+    if ( $srcIdxDbFile == $DB_DIR.$srclang.'.ids.db' ){
+        $condition = "WHERE corpus='$corpus' AND version='$version' AND document='$document'";
+        $results = $srcIdxDBH->query("SELECT rowid FROM documents $condition");
+        if ($results){
+            while ($row = $results->fetchArray(SQLITE3_NUM)) {
+                return $row[0];
+            }
+        }
+    }
+    return 0;
+}
+
+function get_target_document_id($corpus, $version, $document){
+    global $trgIdxDbFile, $trgIdxDBH;
+    global $DB_DIR,$trglang;
+    if ( $trgIdxDbFile == $DB_DIR.$trglang.'.ids.db' ){
+        $condition = "WHERE corpus='$corpus' AND version='$version' AND document='$document'";
+        $results = $trgIdxDBH->query("SELECT rowid FROM documents $condition");
+        if ($results){
+            while ($row = $results->fetchArray(SQLITE3_NUM)) {
+                return $row[0];
+            }
+        }
+    }
+    return 0;
+}
+
+
+// set handle for link DB and file name for ratings DB
+// --> either user-specific or leave it as the global one
+
+function set_link_db($bitextID){
+    global $DB_DIR, $langpair;
+    global $algDbFile, $algStarsDbFile, $algDBH;
+    
+    $USER_DB_DIR = $DB_DIR.$_SESSION['user'].'/';
+    $userAlgDbFile = $USER_DB_DIR.$langpair.'.db';
+    $userAlgStarsDbFile = $USER_DB_DIR.$langpair.'.stars.db';
+
+    if (is_dir($USER_DB_DIR)){
+        if (file_exists($userAlgDbFile) ){
+            $userAlgDBH = new SQLite3($userAlgDbFile);
+            $results = $userAlgDBH->query("SELECT COUNT(*) FROM links WHERE bitextID=$bitextID");
+            if ($results){
+                $row = $results->fetchArray(SQLITE3_NUM);
+                if ( $row[0] ){
+                    // echo("... set to user DBs ($userAlgStarsDbFile)");
+                    $algDBH = $userAlgDBH;
+                    $algStarsDbFile = $userAlgStarsDbFile;
+                }
+            }
+        }
+    }
+}
+
+
+function initialize_user_link_db($bitextID){
+    global $DB_DIR, $langpair, $algDBH, $algStarsDbFile;
+    
+    $USER_DB_DIR = $DB_DIR.$_SESSION['user'].'/';
+    if (! is_dir($USER_DB_DIR)) mkdir($USER_DB_DIR);
+
+    $orgAlgDbFile = $DB_DIR.$langpair.'.db';
+    $userAlgDbFile = $USER_DB_DIR.$langpair.'.db';
+    $userAlgStarsDbFile = $USER_DB_DIR.$langpair.'.stars.db';
+
+    if (! file_exists($userAlgDbFile) ){
+        $userAlgDBH = new SQLite3($userAlgDbFile);
+
+        $userAlgDBH->exec('CREATE TABLE IF NOT EXISTS links ( bitextID, srcIDs TEXT, trgIDs TEXT, alignType TEXT,
+                                                              alignerScore REAL, cleanerScore REAL, rowid INTEGER)');
+        $userAlgDBH->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_links ON links ( bitextID, srcIDs, trgIDs )');
+        $userAlgDBH->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_linkids ON links ( rowid )');
+        $userAlgDBH->exec('CREATE INDEX IF NOT EXISTS idx_aligntype ON links ( bitextID, alignType )');
+        $userAlgDBH->exec('CREATE INDEX IF NOT EXISTS idx_bitextid ON links ( bitextID )');
+        $userAlgDBH->exec("ATTACH DATABASE '".$orgAlgDbFile."' AS org");
+        $columns = 'bitextID, srcIDs, trgIDs, alignType, alignerScore, cleanerScore, rowid';
+        $userAlgDBH->exec("INSERT OR IGNORE INTO links SELECT $columns FROM org.links WHERE bitextID=$bitextID");
+        // $userAlgDBH->exec("INSERT OR IGNORE INTO links SELECT * FROM org.links WHERE bitextID=$bitextID");
+        // echo("INSERT OR IGNORE INTO links SELECT * FROM org.links WHERE bitextID=$bitextID<br/>");
+    }
+    else{
+        $userAlgDBH = new SQLite3($userAlgDbFile);
+        $results = $userAlgDBH->query("SELECT COUNT(*) FROM links WHERE bitextID=$bitextID");
+        if ($results){
+            $row = $results->fetchArray(SQLITE3_NUM);
+            if (! $row[0] ){
+                $userAlgDBH->exec("ATTACH DATABASE '".$orgAlgDbFile."' AS org");
+                $columns = 'bitextID, srcIDs, trgIDs, alignType, alignerScore, cleanerScore, rowid';
+                $userAlgDBH->exec("INSERT OR IGNORE INTO links SELECT $columns FROM org.links WHERE bitextID=$bitextID");
+                // $userAlgDBH->exec("INSERT OR IGNORE INTO links SELECT * FROM org.links WHERE bitextID=$bitextID");
+                // echo("INSERT OR IGNORE INTO links SELECT * FROM org.links WHERE bitextID=$bitextID<br/>");
+            }
+        }
+    }
+
+    if (! file_exists($userAlgStarsDbFile) ){
+        $DBH = new SQLite3($userAlgStarsDbFile);
+        $DBH->exec('CREATE TABLE IF NOT EXISTS ratings (bitextID INTEGER, linkID INTEGER, user TEXT, rating INTEGER)');
+        $DBH->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_ratings ON ratings (bitextID, linkID, user)');
+        $DBH->exec("ATTACH DATABASE '".$algStarsDbFile."' AS org");
+        $DBH->exec("INSERT OR IGNORE INTO ratings SELECT * FROM org.ratings WHERE bitextID=$bitextID");
+        $DBH->close();
+    }
+    else{
+        $DBH = new SQLite3($userAlgStarsDbFile);
+        $results = $userAlgDBH->query("SELECT COUNT(*) FROM ratings WHERE bitextID=$bitextID");
+        if ($results){
+            $row = $results->fetchArray(SQLITE3_NUM);
+            if (! $row[0] ){
+                $DBH->exec("ATTACH DATABASE '".$algStarsDbFile."' AS org");
+                $DBH->exec("INSERT OR IGNORE INTO ratings SELECT * FROM org.ratings WHERE bitextID=$bitextID");
+            }
+        }
+        $DBH->close();
+    }
+
+    
+    $algDBH = $userAlgDBH;
+    $algStarsDbFile = $userAlgStarsDbFile;
+
+    return $userAlgDBH;
+}
+
+function change_link($DBH, $oldLinkID){
+
+    $results = $DBH->query("SELECT * FROM links WHERE rowid=$oldLinkID");
+    if ($results){
+        $row = $results->fetchArray(SQLITE3_NUM);
+        $oldLinkSrc = $row[1];
+        $oldLinkTrg = $row[2];
+        
+        $newLinkID = $_GET['to'];
+
+        delete_alignment_rating($oldLinkID);
+        delete_alignment_rating($newLinkID);
+
+        $results = $DBH->query("SELECT * FROM links WHERE rowid=$newLinkID");
+        if ($results){
+            $row = $results->fetchArray(SQLITE3_NUM);
+            $newLinkSrc = $row[1];
+            $newLinkTrg = $row[2];
+        
+            if (isset($_GET['move-src'])){
+                $sentID = $_GET['move-src'];
+                $oldLinkIDs = explode(' ',$oldLinkSrc);
+                $newLinkIDs = array_diff($oldLinkIDs, array($sentID));
+                $newLink = implode(' ',$newLinkIDs);
+                $trgLinkIDs = explode(' ',$oldLinkTrg);
+                $algType = count($newLinkIDs).'-'.count($trgLinkIDs);
+                $DBH->exec("UPDATE links SET srcIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$oldLinkID"); 
+                
+                $newLinkIDs = explode(' ',$newLinkSrc);
+                if ($newLinkID > $oldLinkID)
+                    array_unshift($newLinkIDs,$sentID);
+                else
+                    array_push($newLinkIDs,$sentID);
+                $newLink = implode(' ',$newLinkIDs);
+                $trgLinkIDs = explode(' ',$newLinkTrg);
+                $algType = count($newLinkIDs).'-'.count($trgLinkIDs);
+                $DBH->exec("UPDATE links SET srcIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$newLinkID"); 
+            }
+
+            
+            elseif (isset($_GET['move-trg'])){
+                $sentID = $_GET['move-trg'];
+                $oldLinkIDs = explode(' ',$oldLinkTrg);
+                $newLinkIDs = array_diff($oldLinkIDs, array($sentID));
+                $newLink = implode(' ',$newLinkIDs);
+                $srcLinkIDs = explode(' ',$oldLinkSrc);
+                $algType = count($srcLinkIDs).'-'.count($newLinkIDs);
+                $DBH->exec("UPDATE links SET trgIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$oldLinkID"); 
+
+                $newLinkIDs = explode(' ',$newLinkTrg);
+                if ($newLinkID > $oldLinkID)
+                    array_unshift($newLinkIDs,$sentID);
+                else
+                    array_push($newLinkIDs,$sentID);
+                $newLink = implode(' ',$newLinkIDs);
+                $srcLinkIDs = explode(' ',$newLinkTrg);
+                $algType = count($srcLinkIDs).'-'.count($newLinkIDs);
+                $DBH->exec("UPDATE links SET trgIDs='$newLink', alignType='$algType', alignerScore=0, cleanerScore=0 WHERE rowid=$newLinkID");
+
+            }
+        }
+    }
+}
+
+
+?>

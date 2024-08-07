@@ -1,4 +1,5 @@
-<?php
+<?php // -*-php-*-
+
 
 // $DB_DIR = '/media/OPUS-MT/OpusIndex/';
 $DB_DIR = '/media/OpusIndex/';
@@ -12,6 +13,13 @@ $ALIGN_TYPES = array('1-1','1-2','2-1','1-0','0-1');
 $default_srclang = 'fi';
 $default_trglang = 'sv';
 
+
+
+$segmentFirstBgColor = '#cfc';
+$segmentFirstBorderColor = '#0a0';
+
+$segmentOtherBgColor = '#fcc';
+$segmentOtherBorderColor = 'red';
 
 
 function get_param($key, $default=''){
