@@ -61,12 +61,6 @@ function get_alignment_rating($bitextID,$linkID,$user=''){
 
 
 function add_alignment_rating($bitextID,$linkID,$user,$rating){
-    /*
-    global $DB_DIR, $langpair;
-    $algRatingDB = $DB_DIR.$langpair.'.stars.db';
-    if (! file_exists($algRatingDB) ){
-        $DBH = new SQLite3($algRatingDB);
-    */ 
     global $algStarsDbFile;
     // echo("add rating to $algStarsDbFile");
     if (! file_exists($algStarsDbFile) ){

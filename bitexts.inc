@@ -345,6 +345,8 @@ function print_editable_bitext_table($results,
     global $segmentFirstBgColor, $segmentFirstBorderColor;
     global $segmentOtherBgColor, $segmentOtherBorderColor;
 
+    $PHP_SELF=$_SERVER['PHP_SELF'];
+
     // show scores does not make sense if we can edit the alignments
     // $showScores = 0;
     

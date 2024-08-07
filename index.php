@@ -116,6 +116,21 @@ $modifiedBitext = false;
 $linkID = get_param('linkID',0);
 $rating = get_param('rating',0);
 
+if ($srclang && $trglang){
+    $srcDbFile      = $DB_DIR.$srclang.'.db';
+    $trgDbFile      = $DB_DIR.$trglang.'.db';
+    $srcIdxDbFile   = $DB_DIR.$srclang.'.ids.db';
+    $trgIdxDbFile   = $DB_DIR.$trglang.'.ids.db';
+    $algDbFile      = $DB_DIR.$langpair.'.db';
+    $algStarsDbFile = $DB_DIR.$langpair.'.stars.db';
+
+    $srcDBH    = new SQLite3($srcDbFile,SQLITE3_OPEN_READONLY);
+    $srcIdxDBH = new SQLite3($srcIdxDbFile,SQLITE3_OPEN_READONLY);
+    $trgDBH    = new SQLite3($trgDbFile,SQLITE3_OPEN_READONLY);
+    $trgIdxDBH = new SQLite3($trgIdxDbFile,SQLITE3_OPEN_READONLY);
+    $algDBH    = new SQLite3($algDbFile,SQLITE3_OPEN_READONLY);
+}
+
 if ($rating){
     set_link_db($bitextID);
     add_alignment_rating($bitextID,$linkID,$_SESSION['user'],$rating);
@@ -144,20 +159,6 @@ $query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '',
 echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">OPUS</a> / ');
 
 if ($srclang && $trglang){
-
-    $srcDbFile      = $DB_DIR.$srclang.'.db';
-    $trgDbFile      = $DB_DIR.$trglang.'.db';
-    $srcIdxDbFile   = $DB_DIR.$srclang.'.ids.db';
-    $trgIdxDbFile   = $DB_DIR.$trglang.'.ids.db';
-    $algDbFile      = $DB_DIR.$langpair.'.db';
-    $algStarsDbFile = $DB_DIR.$langpair.'.stars.db';
-
-    $srcDBH    = new SQLite3($srcDbFile,SQLITE3_OPEN_READONLY);
-    $srcIdxDBH = new SQLite3($srcIdxDbFile,SQLITE3_OPEN_READONLY);
-    $trgDBH    = new SQLite3($trgDbFile,SQLITE3_OPEN_READONLY);
-    $trgIdxDBH = new SQLite3($trgIdxDbFile,SQLITE3_OPEN_READONLY);
-    $algDBH    = new SQLite3($algDbFile,SQLITE3_OPEN_READONLY);
-
     $query = make_query(['corpus' => '', 'fromDoc' => '', 'toDoc' => '', 'aligntype' => '', 'offset' => 0]);
     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$langpair.'</a> / ');
     
