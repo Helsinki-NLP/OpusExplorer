@@ -1,5 +1,11 @@
 
 
+
+# SQLite
+
+* FTS search: https://www.sqlitetutorial.net/sqlite-full-text-search/
+
+
 # Links
 
 Language codes:

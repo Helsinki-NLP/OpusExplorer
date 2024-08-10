@@ -59,27 +59,17 @@ tr.bitexttrg   { border-bottom: 1px solid solid;}
 
 
 include('env.inc');
-
-$USER_DATADIR    = $DB_DIR;
-$USER_NAME_FILE  = $USER_DATADIR.'/users.php';
-$USER_DB         = $USER_DATADIR.'/users.db';
-$ALLOW_NEW_USERS = 1;
-
-
 include('users.inc');
 include('bitexts.inc');
 include('ratings.inc');
 include('index.inc');
 
 
-check_setup();
-
 echo('<h1>OpusExplorer</h1>');
 
 if (!logged_in()){
 	exit;
 }
-
 
 list($srclang, $trglang, $langpair) = get_langpair();
 
@@ -111,6 +101,13 @@ $modifiedBitextExists = false;
 $modifiedBitext = false;
 
 
+/*
+$langpair = 'nn-se';
+$srclang = 'nn';
+$trglang = 'se';
+*/
+
+
 ## check whether we have a new rating to take care of
 
 $linkID = get_param('linkID',0);
@@ -124,11 +121,20 @@ if ($srclang && $trglang){
     $algDbFile      = $DB_DIR.$langpair.'.db';
     $algStarsDbFile = $DB_DIR.$langpair.'.stars.db';
 
+    // check whether we have FTS5 DBs on the server
+    // use them instead!
+
+    if (file_exists($DB_DIR.$srclang.'.fts5.db'))
+        $srcDbFile = $DB_DIR.$srclang.'.fts5.db';
+    if (file_exists($DB_DIR.$trglang.'.fts5.db'))
+        $trgDbFile = $DB_DIR.$trglang.'.fts5.db';
+
     $srcDBH    = new SQLite3($srcDbFile,SQLITE3_OPEN_READONLY);
     $srcIdxDBH = new SQLite3($srcIdxDbFile,SQLITE3_OPEN_READONLY);
     $trgDBH    = new SQLite3($trgDbFile,SQLITE3_OPEN_READONLY);
     $trgIdxDBH = new SQLite3($trgIdxDbFile,SQLITE3_OPEN_READONLY);
     $algDBH    = new SQLite3($algDbFile,SQLITE3_OPEN_READONLY);
+
 }
 
 if ($rating){
@@ -139,15 +145,6 @@ if ($rating){
 }
 
 
-/*
-$langpair = 'fi-sv';
-$srclang = 'fi';
-$trglang = 'sv';
-$corpus = 'OpenSubtitles';
-$version = 'v2012';
-$fromDoc = 'fi/1941/25528/3182613_1of1.xml';
-$toDoc = 'sv/1941/25528/3298325_1of1.xml';
-*/
 
 /////////////////////////////////////////////////////////////////
 // menu
@@ -217,7 +214,7 @@ if ($srclang && $trglang){
 }
 
 // echo('<div class="rightalign"><a href="https://docs.google.com/presentation/d/1J6rPo08FOW9l0UbDjrHgTBFUggdT9LVaGENYH0t2a18/edit?usp=sharing">[help]</a><a href="index.php?logout">[logout]</a></div>');
-echo('<div class="rightalign"><a href="help-login.html">[help]</a><a href="index.php?logout">[logout]</a></div>');
+echo('<div class="rightalign"><a href="help.php">[help]</a><a href="index.php?logout">[logout]</a></div>');
 
 echo('</br><hr>');
 

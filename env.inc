@@ -4,16 +4,42 @@
 // $DB_DIR = '/media/OPUS-MT/OpusIndex/';
 $DB_DIR = '/media/OpusIndex/';
 
+$USER_DATADIR    = $DB_DIR;
+$USER_NAME_FILE  = $USER_DATADIR.'/users.php';
+$USER_DB         = $USER_DATADIR.'/users.db';
+$ALLOW_NEW_USERS = 1;
+
+
 $DOCUMENT_LIST_LIMIT = 25;
 $SHOW_ALIGNMENTS_LIMIT = 25;
 
 $ALIGN_TYPES = array('1-1','1-2','2-1','1-0','0-1');
 
-
 $default_srclang = 'fi';
 $default_trglang = 'sv';
 
 
+
+// edit mode: list corpora that can be edited
+
+$ALLOW_EDIT = array(
+    'DGT',
+    'ELITR-ECA',
+    'EMEA',
+    'Europarl',
+    'GlobalVoices',
+    'GNOME',
+    'JRC-Acquis',
+    'KDE4',
+    'KDEdoc',
+    'NeuLab-TedTalks',
+    'OpenOffice',
+    'OpenSubtitles',
+    'QED',
+    'Tanzil',
+    'TED2020',
+    'Ubuntu'
+);
 
 $segmentFirstBgColor = '#cfc';
 $segmentFirstBorderColor = '#0a0';
@@ -21,11 +47,6 @@ $segmentFirstBorderColor = '#0a0';
 $segmentOtherBgColor = '#fcc';
 $segmentOtherBorderColor = 'red';
 
-$ALLOW_EDIT = array(
-    'OpenSubtitles',
-    'Europarl',
-    'QED'
-);
 
 
 function get_param($key, $default=''){

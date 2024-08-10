@@ -1,4 +1,4 @@
-<?php
+<?php // -*-php-*-
 
 $WEBSITE_TITLE = 'OPUS Explorer';
 
@@ -20,7 +20,6 @@ function check_setup(){
 function logged_in ( ) {
 
     // already logged in! --> return true
-
     if (isset($_SESSION['user'])){
         return true;
     }
@@ -28,7 +27,8 @@ function logged_in ( ) {
     global $ALLOW_NEW_USERS;
     global $USER_DB;
 
-    
+    echo('<div class="rightalign"><a href="help.php">[help]</a>[login]</div></br><hr>');
+    check_setup();    
     if (isset($_POST['reset'])){
         if ($_POST[email]){
             if (prepare_password_reset($USER_DB, $_POST['email'])){
@@ -90,7 +90,7 @@ function logged_in ( ) {
 
     if ($ALLOW_NEW_USERS){
         echo "Login or create a new user using the form below!<br/>";
-        echo "Please use the following characters for your username: a-zA-Z0-9_<br /><br/>";
+        echo "Allowed characters for your username: a-zA-Z0-9_<br /><br/>";
     }
 
     echo "<form action=\"$PHP_SELF\" method=\"post\"><table>";
