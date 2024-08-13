@@ -9,8 +9,14 @@ function clean_input($data) {
   return $data;
 }
 
-$query = (isset($_GET['query'])) ? $_GET['query'] : 'ikkje lesbar';
-$limit = (isset($_GET['max'])) ? $_GET['max'] : 100;
+$langpair = (isset($_GET['langpair'])) ? $_GET['langpair'] : 'de-sv';
+$corpus = (isset($_GET['corpus'])) ? $_GET['corpus'] : 'Europarl';
+$version = (isset($_GET['version'])) ? $_GET['version'] : 'v8';
+$query = (isset($_GET['query'])) ? $_GET['query'] : 'trainieren';
+$limit = (isset($_GET['max'])) ? $_GET['max'] : 10;
+$offset = (isset($_GET['offset'])) ? $_GET['offset'] : 0;
+
+list($srclang,$trglang) = explode('-',$langpair);
 
 
 echo('<form action="search.php">');
@@ -23,32 +29,51 @@ echo('</form>');
 // phpinfo();
 
 
-$srcDBH = new SQLite3('/media/OpusIndex/nn.fts5.db',SQLITE3_OPEN_READONLY);
-$trgDBH = new SQLite3('/media/OpusIndex/se.fts5.db',SQLITE3_OPEN_READONLY);
+$srcDBH = new SQLite3('/media/OpusIndex/'.$srclang.'.fts5.db',SQLITE3_OPEN_READONLY);
+$trgDBH = new SQLite3('/media/OpusIndex/'.$trglang.'.fts5.db',SQLITE3_OPEN_READONLY);
 
-$linksDBH = new SQLite3('/media/OpusIndex/nn-se.linked.db',SQLITE3_OPEN_READONLY);
-$algDBH = new SQLite3('/media/OpusIndex/nn-se.db',SQLITE3_OPEN_READONLY);
+$linksDBH = new SQLite3('/media/OpusIndex/'.$langpair.'.linked.db',SQLITE3_OPEN_READONLY);
+$algDBH = new SQLite3('/media/OpusIndex/'.$langpair.'.db',SQLITE3_OPEN_READONLY);
 
-$srcIdxDBH = new SQLite3('/media/OpusIndex/nn.ids.db',SQLITE3_OPEN_READONLY);
-$trgIdxDBH = new SQLite3('/media/OpusIndex/se.ids.db',SQLITE3_OPEN_READONLY);
-
-
-$linksDBH = new SQLite3('/media/OpusIndex/nn-se.linked.db',SQLITE3_OPEN_READONLY);
-$linksDBH->exec("ATTACH DATABASE '/media/OpusIndex/nn.fts5.db' AS srcdb");
-$linksDBH->exec("ATTACH DATABASE '/media/OpusIndex/nn-se.db' AS algdb");
-// $linksDBH->exec("ATTACH DATABASE '/media/OpusIndex/se.fts5.db' AS trgdb");
+$srcIdxDBH = new SQLite3('/media/OpusIndex/'.$srclang.'.ids.db',SQLITE3_OPEN_READONLY);
+$trgIdxDBH = new SQLite3('/media/OpusIndex/'.$trglang.'.ids.db',SQLITE3_OPEN_READONLY);
 
 
-$bitexts=array();
+$linksDBH = new SQLite3('/media/OpusIndex/'.$langpair.'.linked.db',SQLITE3_OPEN_READONLY);
+$linksDBH->exec("ATTACH DATABASE '/media/OpusIndex/".$srclang.".fts5.db' AS srcdb");
+$linksDBH->exec("ATTACH DATABASE '/media/OpusIndex/".$langpair.".db' AS algdb");
+// $linksDBH->exec("ATTACH DATABASE '/media/OpusIndex/".$trglang.".fts5.db' AS trgdb");
+
+
+$bitexts = array();
+$corpusID = 0;
+$limitstr = '';
+$offsetstr = '';
 
 if ($query){
+    $condition = "src.sentence MATCH '".$query."'";
+    if ($corpus && $version){
+        $results = $linksDBH->query("SELECT rowid FROM corpora WHERE corpus='$corpus' AND version='$version'");
+        while ($row = $results->fetchArray(SQLITE3_NUM)) {
+            $corpusID = $row[0];
+            $condition .= ' AND corpusID='.$corpusID;
+        }
+    }
+    if ($limit) $limitstr = " LIMIT ".$limit;
+    if ($offset) $offsetstr = " OFFSET ".$offset;
+    $start = microtime(true);
     $results = $linksDBH->query(
         "SELECT bitextID, sentID, srcIDs, trgIDs, highlight(sentences,0, '<b>', '</b>') sentence 
             FROM srcdb.sentences as src
             INNER JOIN linkedsource ON src.rowid=linkedsource.sentID
             INNER JOIN algdb.links AS links ON links.rowid=linkedsource.linkID
-            WHERE src.sentence MATCH '".$query."' LIMIT ".$limit);
+            WHERE ".$condition.$limitstr.$offsetstr);
+    $queryTime = microtime(true) - $start;
 }
+
+$fetchDocIdTime = 0;
+$fetchSentenceIdTime = 0;
+$fetchSentenceTime = 0;
 
 if ($results){
     echo("<table border='1'>\n");
@@ -58,22 +83,31 @@ if ($results){
         $srcIDs=explode(' ',trim($row[2]));
         $trgIDs=explode(' ',trim($row[3]));
         $sent=$row[4];
+        $start = microtime(true);
         $docIDs = get_bitext_docids($bitextID);
+        $fetchDocIdTime += microtime(true) - $start;
 
         $srcSents = array();
         foreach ($srcIDs as $sentID){
+            $start = microtime(true);
             $id = get_sentence_id($srcIdxDBH, $docIDs[0], $sentID);
-            if ($id == $srcID){
+            $fetchSentenceIdTime += microtime(true) - $start;
+            if ($id == $srcID)
                 array_push($srcSents, $sent);
-            }
             else{
+                $start = microtime(true);
                 array_push($srcSents, get_sentence($srcDBH, $id));
+                $fetchSentenceTime += microtime(true) - $start;
             }
         }
         $trgSents = array();
         foreach ($trgIDs as $sentID){
+            $start = microtime(true);
             $id = get_sentence_id($trgIdxDBH, $docIDs[1], $sentID);
+            $fetchSentenceIdTime += microtime(true) - $start;
+            $start = microtime(true);
             array_push($trgSents, get_sentence($trgDBH, $id));
+            $fetchSentenceTime += microtime(true) - $start;
         }
 
         echo("<tr>\n<td>$bitextID</td>\n<td style='text-align: right'>");
@@ -83,6 +117,15 @@ if ($results){
         echo("\n</tr>\n");
     }
     echo('</table>');
+
+    $totalTime = $queryTime + $fetchDocIdTime + $fetchSentenceIdTime + $fetchSentenceTime;
+    echo('<ul>');
+    echo("<li>".$queryTime." (query time)</li>\n");
+    echo("<li>".$fetchDocIdTime." (time for fetching IDs)</li>\n");
+    echo("<li>".$fetchSentenceIdTime." (time for fetching sentence IDs)</li>\n");
+    echo("<li>".$fetchSentenceTime." (time for fetching sentences)</li>\n");
+    echo("<li>".$totalTime." (total time for fetching data)</li>\n");
+    echo('</ul>');
 }
 
 

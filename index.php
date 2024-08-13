@@ -73,6 +73,9 @@ if (!logged_in()){
 
 list($srclang, $trglang, $langpair) = get_langpair();
 
+$searchable = get_param('searchable',0);
+$browsable = get_param('browsable',0);
+
 $corpus = get_param('corpus');
 $version = get_param('version');
 $fromDoc = get_param('fromDoc');
@@ -99,6 +102,11 @@ $allowEdit = in_array($corpus, $ALLOW_EDIT);
 
 $modifiedBitextExists = false;
 $modifiedBitext = false;
+
+
+
+$searchableLangpairs = array();
+$browsableLangpairs = array();
 
 
 /*
@@ -151,16 +159,17 @@ if ($rating){
 /////////////////////////////////////////////////////////////////
 
 
-$query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '',
+$query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '', 'search' => '',
                      'corpus' => '', 'fromDoc' => '', 'toDoc' => '', 'aligntype' => '', 'offset' => 0]);
 echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">OPUS</a> / ');
 
 if ($srclang && $trglang){
-    $query = make_query(['corpus' => '', 'fromDoc' => '', 'toDoc' => '', 'aligntype' => '', 'offset' => 0]);
+    $query = make_query(['corpus' => '', 'fromDoc' => '', 'toDoc' => '', 'search' => '',
+                         'aligntype' => '', 'offset' => 0]);
     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$langpair.'</a> / ');
     
     if ($corpus && $version){
-        $query = make_query(['fromDoc' => '', 'toDoc' => '', 'aligntype' => '', 'offset' => 0]);
+        $query = make_query(['fromDoc' => '', 'toDoc' => '', 'aligntype' => '', 'search' => '', 'offset' => 0]);
         echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.' / '.$version.'</a> / ');
         
         if ($fromDoc && $toDoc){
@@ -211,6 +220,24 @@ if ($srclang && $trglang){
             }
         }
     }
+    if ($searchable){
+        if (! $fromDoc && ! $toDoc){
+            $searchquery = (isset($_GET['search'])) ? $_GET['search'] : '';
+            // $searchquery = get_param('search','');
+            echo(' <form action="'.$_SERVER['PHP_SELF'].'" method="get" style="display: inline;">');
+            echo('<input type="hidden" id="langpair" name="langpair" value="'.$langpair.'">');
+            echo('<input type="hidden" id="offset" name="offset" value="0">');
+            echo('<input type="hidden" id="limit" name="limit" value="10">');
+            if ($corpus && $version){
+                echo('<input type="hidden" id="corpus" name="corpus" value="'.$corpus.'">');
+                echo('<input type="hidden" id="version" name="version" value="'.$version.'">');
+            }
+            echo('<input type="text" name="search" id="search" value="'.$searchquery.'" required />');
+            echo('<input type="submit" name="action" value="search source" />');
+            echo('<input type="submit" name="action" value="search target" />');
+            echo('</form>');
+        }
+    }
 }
 
 // echo('<div class="rightalign"><a href="https://docs.google.com/presentation/d/1J6rPo08FOW9l0UbDjrHgTBFUggdT9LVaGENYH0t2a18/edit?usp=sharing">[help]</a><a href="index.php?logout">[logout]</a></div>');
@@ -222,6 +249,22 @@ echo('</br><hr>');
 // content
 /////////////////////////////////////////////////////////////////
 
+
+
+include('search.inc');
+
+if ($searchable){
+    if (! $fromDoc && ! $toDoc){
+        if ($searchquery){
+            $searchlimit = get_param('limit',10);
+            $searchoffset = get_param('offset',0);
+            $searchside = get_param('action','search source');
+            // $searchside = $_GET['action'];
+            search($searchquery, $searchside, $langpair, $corpus, $version, $searchlimit, $searchoffset);
+            exit();
+        }
+    }
+}
 if ($srclang && $trglang){    
     if ($corpus && $version){
         if ($fromDoc && $toDoc){
@@ -329,16 +372,20 @@ function print_corpus_list(){
 
 function print_langpair_list(){
     global $DB_DIR;
+    global $searchableLangpairs, $browsableLangpairs;
+    
     // $langpairs = array('fi-uk');
     $langpairs = find_bitext_dbs($DB_DIR);
-    asort($langpairs);
+    ksort($langpairs);
 
     echo('<ul>');
-    foreach ($langpairs as $langpair){
+    foreach ($langpairs as $langpair => $val){
         list($srclang,$trglang) = explode('-',$langpair);
         $srclangname = Locale::getDisplayName($srclang, 'en');
         $trglangname = Locale::getDisplayName($trglang, 'en');
-        $query = make_query(['langpair' => $langpair]);
+        $query = make_query(['langpair' => $langpair,
+                             'browsable' => ($browsableLangpairs[$langpair] == true),
+                             'searchable' => ($searchableLangpairs[$langpair] == true)]);
         echo '<li><a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">';
         echo $langpair.' ('.$srclangname.' - '.$trglangname;
         echo ')</a></li>'."\n";
@@ -353,15 +400,27 @@ function print_langpair_list(){
 
 
 function find_bitext_dbs($path){
+    global $searchableLangpairs, $browsableLangpairs;
+    
     $langpairs = array();
+    
     if ($handle = opendir($path)) {
         while (false !== ($entry = readdir($handle))) {
             if (substr($entry,-3) == '.db') {
-                if (substr($entry,-9) != '.stars.db') {
+                if (substr($entry,-10) == '.linked.db') {
+                    $lang = basename($entry,'.linked.db');
+                    $parts = explode('-',$lang);
+                    if (count($parts) == 2){
+                        $searchableLangpairs[$lang] = true;
+                        $langpairs[$lang] = true;
+                    }
+                }
+                elseif (substr($entry,-9) != '.stars.db') {
                     $lang = basename($entry,'.db');
                     $parts = explode('-',$lang);
                     if (count($parts) == 2){
-                        array_push($langpairs,$lang);
+                        $browsableLangpairs[$lang] = true;
+                        $langpairs[$lang] = true;
                     }
                 }
             }
