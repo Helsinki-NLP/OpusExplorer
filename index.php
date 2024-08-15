@@ -63,6 +63,7 @@ include('users.inc');
 include('bitexts.inc');
 include('ratings.inc');
 include('index.inc');
+include('search.inc');
 
 
 echo('<h1>OpusExplorer</h1>');
@@ -99,6 +100,8 @@ $allowEdit = in_array($corpus, $ALLOW_EDIT);
 
 $modifiedBitextExists = false;
 $modifiedBitext = false;
+
+$searchquery = get_param('search','');
 
 
 ## check whether we have a new rating to take care of
@@ -154,70 +157,20 @@ if ($srclang && $trglang){
         echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.' / '.$version.'</a> / ');
         
         if ($fromDoc && $toDoc){
-
-            if (! $bitextID){
-                $bitextID = get_bitextid($corpus, $version, $fromDoc, $toDoc);
-                if ($bitextID) set_param('bitextID',$bitextID);
-            }
+            if (!$bitextID) $bitextID = get_bitextid($corpus, $version, $fromDoc, $toDoc);
+            set_param('bitextID',$bitextID);
             set_link_db($bitextID);
-            
-            $query = make_query(['aligntype' => '', 'offset' => 0]);
+            $query = make_query(['aligntype' => '', 'offset' => 0, 'search' => '']);
             echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$fromDoc.'</a> / ');
-
-            if ($tableStyle == 'edit' && $allowEdit){
-                $query = make_query(['style' => 'horizontal']);
-                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">stop editing</a> / ');
-            }
-            else{
-                if ($modifiedBitextExists){
-                    if ($showModified){
-                        $query = make_query(['showModified' => 0]);
-                        echo('modified / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">original</a> / ');
-                    }
-                    else{
-                        $query = make_query(['showModified' => 1]);
-                        echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">modified</a> / original / ');
-                    }
-                }
-                if ($allowEdit){
-                    $query = make_query(['style' => 'edit']);
-                    echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit mode</a> / ');
-                }
-
-                foreach ($ALIGN_TYPES as $type){
-                    $query = make_query(['aligntype' => $type, 'offset' => 0]);
-                    echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$type.'</a> / ');
-                }
-                $query = make_query(['aligntype' => 'other', 'offset' => 0]);
-                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">other</a> / ');
-                if ($showEmpty){
-                    $query = make_query(['showEmpty' => 0]);
-                    echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">hide empty</a>');
-                }
-                else{
-                    $query = make_query(['showEmpty' => 1]);
-                    echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">show empty</a>');
-                }
-            }
+            if ($browsable && ! $searchquery) bitext_browsing_links();
         }
     }
-    if ($searchable){
-        if (! $fromDoc && ! $toDoc){
-            // $searchquery = (isset($_GET['search'])) ? $_GET['search'] : '';
-            $searchquery = get_param('search','');
-            echo(' <form action="'.$_SERVER['PHP_SELF'].'" method="get" style="display: inline;">');
-            echo('<input type="hidden" id="langpair" name="langpair" value="'.$langpair.'">');
-            echo('<input type="hidden" id="offset" name="offset" value="0">');
-            echo('<input type="hidden" id="limit" name="limit" value="10">');
-            if ($corpus && $version){
-                echo('<input type="hidden" id="corpus" name="corpus" value="'.$corpus.'">');
-                echo('<input type="hidden" id="version" name="version" value="'.$version.'">');
-            }
-            echo('<input type="text" name="search" id="search" value="'.$searchquery.'" required />');
-            echo('<input type="submit" name="action" value="search source" />');
-            echo('<input type="submit" name="action" value="search target" />');
-            echo('</form>');
-        }
+    if (! $fromDoc || ! $toDoc){
+        $bitextID = 0;
+        set_param('bitextID',$bitextID);
+    }
+    if ( ($searchable && ! $bitextID) || ($searchable && $searchquery) || ($searchable && ! $browsable) ){
+        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $searchquery);
     }
 }
 
@@ -231,19 +184,16 @@ echo('</br><hr>');
 /////////////////////////////////////////////////////////////////
 
 
-
-include('search.inc');
-
 if ($searchable){
-    if (! $fromDoc && ! $toDoc){
-        if ($searchquery){
-            $searchlimit = get_param('limit',10);
-            $searchoffset = get_param('offset',0);
-            $searchside = get_param('action','search source');
-            // $searchside = $_GET['action'];
-            search($searchquery, $searchside, $langpair, $corpus, $version, $searchlimit, $searchoffset);
-            exit();
-        }
+    if ($searchquery){
+        $searchlimit = get_param('limit',10);
+        $searchoffset = get_param('offset',0);
+        $searchside = get_param('action','search source');
+        // $searchside = $_GET['action'];
+        search($searchquery, $searchside,
+               $langpair, $corpus, $version, $bitextID,
+               $searchlimit, $searchoffset);
+        exit();
     }
 }
 if ($srclang && $trglang){    

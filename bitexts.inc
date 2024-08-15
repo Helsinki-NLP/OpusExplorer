@@ -1,6 +1,50 @@
 <?php // -*-php-*-
 
 
+
+function bitext_browsing_links(){
+    global $tableStyle, $modifiedBitextExists, $showModified, $allowEdit, $showEmpty;
+    global $ALIGN_TYPES;
+
+    if ($tableStyle == 'edit' && $allowEdit){
+        $query = make_query(['style' => 'horizontal']);
+        echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">stop editing</a> / ');
+    }
+    else{
+        if ($modifiedBitextExists){
+            if ($showModified){
+                $query = make_query(['showModified' => 0]);
+                echo('modified / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">original</a> / ');
+            }
+            else{
+                $query = make_query(['showModified' => 1]);
+                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">modified</a> / original / ');
+            }
+        }
+        if ($allowEdit){
+            $query = make_query(['style' => 'edit']);
+            echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit mode</a> / ');
+        }
+        
+        foreach ($ALIGN_TYPES as $type){
+            $query = make_query(['aligntype' => $type, 'offset' => 0]);
+            echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$type.'</a> / ');
+        }
+        $query = make_query(['aligntype' => 'other', 'offset' => 0]);
+        echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">other</a> / ');
+        if ($showEmpty){
+            $query = make_query(['showEmpty' => 0]);
+            echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">hide empty</a>');
+        }
+        else{
+            $query = make_query(['showEmpty' => 1]);
+            echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">show empty</a>');
+        }
+    }
+}
+
+
+
 ////////////////////
 // print bitext display options
 ///////////////////
@@ -98,7 +142,7 @@ function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocI
 
     if (! $bitextID){
         $bitextID = get_bitextid($corpus, $version, $fromDoc, $toDoc);
-        if ($bitextID) set_param('bitextID',$bitextID);
+        set_param('bitextID',$bitextID);
         set_link_db($bitextID);
     }
 
@@ -158,12 +202,21 @@ function print_horizontal_bitext_table($results,
                                        $showMyRatings=1, $showRatings=0){
 
     global $srcDBH, $srcIdxDBH, $trgDBH, $trgIdxDBH;
+    global $langpair, $searchable;
     
     echo('<table class="bitext">');
-    echo("<tr><th>IDs</th><th>$fromDoc</th>");
+    echo("<tr><th>IDs</th><th>".$fromDoc);
+    if ($searchable){
+        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
+    }
+    echo("</th>");
     if ($showScores) echo('<th>score</th>');
     if ($showLengthRatio) echo('<th>ratio</th>');
-    echo("<th>$toDoc</th><th>IDs</th>");
+    echo("<th>".$toDoc);
+    if ($searchable){
+        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
+    }
+    echo("</th><th>IDs</th>");
     if ($showMyRatings) echo('<th>my ratings</th>');
     if ($showRatings) echo('<th>ratings</th>');
     echo("</tr>");
@@ -580,13 +633,18 @@ function print_new_horizontal_bitext_table($results,
                             $showScores=1, $showLengthRatio=0,
                             $showMyRatings=1, $showRatings=0){
 
+    global $langpair, $searchable;
     global $srcDBH, $srcIdxDBH, $trgDBH, $trgIdxDBH;
     global $segmentFirstBgColor, $segmentFirstBorderColor;
     global $segmentOtherBgColor, $segmentOtherBorderColor;
 
     
     echo('<table class="bitext">');
-    echo("<tr><th>$fromDoc</th>");
+    echo("<tr><th>".$fromDoc);
+    if ($searchable){
+        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
+    }
+    echo("</th>");
     if ($showScores) echo('<th>score</th>');
     if ($showLengthRatio) echo('<th>ratio</th>');
     echo("<th>$toDoc</th>");

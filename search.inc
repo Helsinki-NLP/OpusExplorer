@@ -10,6 +10,31 @@ function clean_input($data) {
 }
 
 
+function print_search_form($langpair, $corpus='', $version='', $fromDoc='', $toDoc='', $bitextID=0,
+                           $searchquery='', $allowSourceSearch=1, $allowTargetSearch=1){
+    echo(' <form action="'.$_SERVER['PHP_SELF'].'" method="get" style="display: inline;">');
+    echo('<input type="hidden" id="langpair" name="langpair" value="'.$langpair.'">');
+    echo('<input type="hidden" id="offset" name="offset" value="0">');
+    echo('<input type="hidden" id="limit" name="limit" value="10">');
+    if ($corpus && $version){
+        echo('<input type="hidden" id="corpus" name="corpus" value="'.$corpus.'">');
+        echo('<input type="hidden" id="version" name="version" value="'.$version.'">');
+    }
+    if ($fromDoc && $toDoc){
+        echo('<input type="hidden" id="fromDoc" name="fromDoc" value="'.$fromDoc.'">');
+        echo('<input type="hidden" id="toDoc" name="fromDoc" value="'.$toDoc.'">');
+    }
+    if ($bitextID){
+        echo('<input type="hidden" id="bitextID" name="bitextID" value="'.$bitextID.'">');
+    }
+    echo('<input type="text" name="search" id="search" value="'.$searchquery.'" required />');
+    if ($allowSourceSearch) echo('<input type="submit" name="action" value="search source" />');
+    if ($allowTargetSearch) echo('<input type="submit" name="action" value="search target" />');
+    echo('</form>');
+}
+
+
+
 function search_navigation($searchquery, $offset, $showMaxAlignments){
 
     //echo("lastentry = $offset + $showMaxAlignments");
@@ -65,10 +90,11 @@ function search_display_options($searchquery){
 
 
 
-function search($searchquery, $searchside, $langpair, $corpus='', $version='', $limit=10, $offset=0){
+function search($searchquery, $searchside, $langpair, $corpus='', $version='', $bitextID='', $limit=10, $offset=0){
     // global $showMaxAlignments, $showScores, $showLengthRatio, $showRatings, $showMyRatings, $showEmpty;
     global $showLengthRatio, $showRatings, $showMyRatings;
     global $linkDbFile;
+    global $fromDoc, $toDoc;
 
     list($srclang,$trglang) = explode('-',$langpair);
     
@@ -86,8 +112,12 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
         // echo("search $corpus / $version");
     // echo("search $corpus / $version / $searchside");
     
+    $srcquery = $searchside == 'search source' ? $searchquery : '';
+    $trgquery = $searchside == 'search target' ? $searchquery : '';
+    
     if ($searchquery){
         $condition = "sentence MATCH '".$searchquery."'";
+        if ($bitextID) $condition .= ' AND bitextID='.$bitextID;
         if ($limit) $limitstr = " LIMIT ".$limit;
         if ($offset) $offsetstr = " OFFSET ".$offset;
 
@@ -121,10 +151,14 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
         search_display_options($searchquery);
         $shown=0;
         echo("<table class='bitext'>\n");
-        echo("<tr><th>link ID</th><th>source language</th>");
+        echo("<tr><th>link ID</th><th>source language");
+        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $srcquery, 1, 0);
+        echo("</th>");
         if ($showScores) echo('<th>score</th>');
         if ($showLengthRatio) echo('<th>ratio</th>');
-        echo("<th>target language</th>");
+        echo("<th>target language");
+        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $trgquery, 0, 1);
+        echo("</th>");
         if ($showMyRatings) echo('<th>my ratings</th>');
         if ($showRatings) echo('<th>ratings</th>');
         echo("</tr>");
