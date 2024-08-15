@@ -73,9 +73,6 @@ if (!logged_in()){
 
 list($srclang, $trglang, $langpair) = get_langpair();
 
-$searchable = get_param('searchable',0);
-$browsable = get_param('browsable',0);
-
 $corpus = get_param('corpus');
 $version = get_param('version');
 $fromDoc = get_param('fromDoc');
@@ -104,45 +101,30 @@ $modifiedBitextExists = false;
 $modifiedBitext = false;
 
 
-
-$searchableLangpairs = array();
-$browsableLangpairs = array();
-
-
-/*
-$langpair = 'nn-se';
-$srclang = 'nn';
-$trglang = 'se';
-*/
-
-
 ## check whether we have a new rating to take care of
 
 $linkID = get_param('linkID',0);
 $rating = get_param('rating',0);
 
 if ($srclang && $trglang){
-    $srcDbFile      = $DB_DIR.$srclang.'.db';
-    $trgDbFile      = $DB_DIR.$trglang.'.db';
-    $srcIdxDbFile   = $DB_DIR.$srclang.'.ids.db';
-    $trgIdxDbFile   = $DB_DIR.$trglang.'.ids.db';
-    $algDbFile      = $DB_DIR.$langpair.'.db';
-    $algStarsDbFile = $DB_DIR.$langpair.'.stars.db';
+    $srcDbFile      = get_lang_dbfile($srclang);
+    $trgDbFile      = get_lang_dbfile($trglang);
+    $srcIdxDbFile   = get_langidx_dbfile($srclang);
+    $trgIdxDbFile   = get_langidx_dbfile($trglang);
+    $bitextDbFile   = get_bitext_dbfile($langpair);
+    $linkDbFile     = get_link_dbfile($langpair,$corpus,$version,$fromDoc,$toDoc);
+    $algDbFile      = get_alignment_dbfile($langpair);
+    $algStarsDbFile = get_ratings_dbfile($langpair);
 
-    // check whether we have FTS5 DBs on the server
-    // use them instead!
+    if ($srcDbFile)    $srcDBH    = new SQLite3($srcDbFile,SQLITE3_OPEN_READONLY);
+    if ($trgDbFile)    $trgDBH    = new SQLite3($trgDbFile,SQLITE3_OPEN_READONLY);
+    if ($srcIdxDbFile) $srcIdxDBH = new SQLite3($srcIdxDbFile,SQLITE3_OPEN_READONLY);
+    if ($trgIdxDbFile) $trgIdxDBH = new SQLite3($trgIdxDbFile,SQLITE3_OPEN_READONLY);
+    if ($algDbFile)    $algDBH    = new SQLite3($algDbFile,SQLITE3_OPEN_READONLY);
+    if ($bitextDbFile) $bitextDBH = new SQLite3($bitextDbFile,SQLITE3_OPEN_READONLY);
 
-    if (file_exists($DB_DIR.$srclang.'.fts5.db'))
-        $srcDbFile = $DB_DIR.$srclang.'.fts5.db';
-    if (file_exists($DB_DIR.$trglang.'.fts5.db'))
-        $trgDbFile = $DB_DIR.$trglang.'.fts5.db';
-
-    $srcDBH    = new SQLite3($srcDbFile,SQLITE3_OPEN_READONLY);
-    $srcIdxDBH = new SQLite3($srcIdxDbFile,SQLITE3_OPEN_READONLY);
-    $trgDBH    = new SQLite3($trgDbFile,SQLITE3_OPEN_READONLY);
-    $trgIdxDBH = new SQLite3($trgIdxDbFile,SQLITE3_OPEN_READONLY);
-    $algDBH    = new SQLite3($algDbFile,SQLITE3_OPEN_READONLY);
-
+    $browsable = ($srcIdxDbFile && $trgIdxDbFile && $algDbFile);
+    $searchable = ($linkDbFile != '');
 }
 
 if ($rating){
@@ -151,7 +133,6 @@ if ($rating){
     delete_param('linkID');
     delete_param('rating');
 }
-
 
 
 /////////////////////////////////////////////////////////////////
@@ -222,8 +203,8 @@ if ($srclang && $trglang){
     }
     if ($searchable){
         if (! $fromDoc && ! $toDoc){
-            $searchquery = (isset($_GET['search'])) ? $_GET['search'] : '';
-            // $searchquery = get_param('search','');
+            // $searchquery = (isset($_GET['search'])) ? $_GET['search'] : '';
+            $searchquery = get_param('search','');
             echo(' <form action="'.$_SERVER['PHP_SELF'].'" method="get" style="display: inline;">');
             echo('<input type="hidden" id="langpair" name="langpair" value="'.$langpair.'">');
             echo('<input type="hidden" id="offset" name="offset" value="0">');
@@ -267,7 +248,7 @@ if ($searchable){
 }
 if ($srclang && $trglang){    
     if ($corpus && $version){
-        if ($fromDoc && $toDoc){
+        if ($fromDoc && $toDoc && $browsable){
             //print_links($corpus, $version, $fromDoc, $toDoc);
             print_bitext($corpus, $version, $fromDoc, $toDoc,
                          $fromDocID, $toDocID, $bitextID,
@@ -295,7 +276,7 @@ else{
 
 
 function print_document_list($corpus, $version, $offset=0){
-    global $algDBH;
+    global $bitextDBH;
     global $showMaxDocuments;
     
     $condition = "WHERE corpus='$corpus' AND version='$version'";
@@ -304,7 +285,7 @@ function print_document_list($corpus, $version, $offset=0){
     if ($offset){
         $limit .= " OFFSET $offset";
     }
-    $results = $algDBH->query("SELECT DISTINCT fromDoc,toDoc,rowid FROM bitexts $condition $limit");
+    $results = $bitextDBH->query("SELECT DISTINCT fromDoc,toDoc,rowid FROM bitexts $condition $limit");
     
     if ($results){
         if ($offset){
@@ -341,9 +322,10 @@ function print_document_list($corpus, $version, $offset=0){
 }
 
 function print_corpus_list(){
-    global $algDBH;
+    global $bitextDBH;
     echo('<ul>');
-    $results = $algDBH->query("SELECT DISTINCT corpus,version FROM aligned_corpora ORDER BY corpus");
+    $results = $bitextDBH->query("SELECT DISTINCT corpus,version FROM aligned_corpora ORDER BY corpus");
+    // $results = $bitextDBH->query("SELECT DISTINCT corpus,version FROM bitexts ORDER BY corpus");
     if ($results){
         $corpus = '';
         $versions = array();
@@ -359,7 +341,7 @@ function print_corpus_list(){
             }
             array_push($versions,$row[1]);
             $version = $row[1];
-            $query = make_query(['corpus' => $corpus, 'version' => $version]);
+            $query = make_query(['corpus' => $corpus, 'version' => $version, 'search' => '']);
             $link = '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">';
             $versionLinks .= ' ['.$link.$version.'</a>]';
         }
@@ -372,7 +354,6 @@ function print_corpus_list(){
 
 function print_langpair_list(){
     global $DB_DIR;
-    global $searchableLangpairs, $browsableLangpairs;
     
     // $langpairs = array('fi-uk');
     $langpairs = find_bitext_dbs($DB_DIR);
@@ -383,9 +364,7 @@ function print_langpair_list(){
         list($srclang,$trglang) = explode('-',$langpair);
         $srclangname = Locale::getDisplayName($srclang, 'en');
         $trglangname = Locale::getDisplayName($trglang, 'en');
-        $query = make_query(['langpair' => $langpair,
-                             'browsable' => ($browsableLangpairs[$langpair] == true),
-                             'searchable' => ($searchableLangpairs[$langpair] == true)]);
+        $query = make_query(['langpair' => $langpair, 'search' => '']);
         echo '<li><a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">';
         echo $langpair.' ('.$srclangname.' - '.$trglangname;
         echo ')</a></li>'."\n";
@@ -400,10 +379,8 @@ function print_langpair_list(){
 
 
 function find_bitext_dbs($path){
-    global $searchableLangpairs, $browsableLangpairs;
     
-    $langpairs = array();
-    
+    $langpairs = array();    
     if ($handle = opendir($path)) {
         while (false !== ($entry = readdir($handle))) {
             if (substr($entry,-3) == '.db') {
@@ -411,7 +388,6 @@ function find_bitext_dbs($path){
                     $lang = basename($entry,'.linked.db');
                     $parts = explode('-',$lang);
                     if (count($parts) == 2){
-                        $searchableLangpairs[$lang] = true;
                         $langpairs[$lang] = true;
                     }
                 }
@@ -419,7 +395,6 @@ function find_bitext_dbs($path){
                     $lang = basename($entry,'.db');
                     $parts = explode('-',$lang);
                     if (count($parts) == 2){
-                        $browsableLangpairs[$lang] = true;
                         $langpairs[$lang] = true;
                     }
                 }

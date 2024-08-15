@@ -407,13 +407,16 @@ function print_editable_bitext_table($results,
             echo '<a name="src-'.$srcIDs[$x].'" />';
             $anchor = (count($srcAnchors) > 4) ? '#src-'.$srcAnchors[count($srcAnchors)-4] : '';
             echo("<tr>");
-            echo("<td class='segment-id'>");
+            echo("<td class='segment-move'>");
             if ($srcIDs[$x]){
                 echo($srcIDs[$x]);
                 $query = make_query(['changelink' => $linkID, 'del-src' => $srcIDs[$x]]);
-                echo("&nbsp;<span onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
+                echo("</td><td class='segment-move' onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                                   onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-                                  onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x29BB;</span>");
+                                  onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x1f5d1;");
+#                echo("&nbsp;<span onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
+#                                  onMouseOut=\"setStyle(this,'backgroundColor','white')\"
+#                                  onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x1f5d1;</span>");
             }
             echo("</td>");
             
@@ -529,13 +532,18 @@ function print_editable_bitext_table($results,
                 echo("<td class='segment-move'></td>");
             }
             
-            echo("<td class='segment-id'>");
+            // echo("<td class='segment-id'>");
             if ($trgIDs[$x]){
                 $query = make_query(['changelink' => $linkID, 'del-trg' => $trgIDs[$x]]);
-                echo("<span onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
+                echo("<td class='segment-move' onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                             onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-                            onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x29BB;</span>&nbsp;");
+                            onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x1f5d1;");
+#                echo("<span onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
+#                            onMouseOut=\"setStyle(this,'backgroundColor','white')\"
+#                            onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x1f5d1;</span>&nbsp;");
+                echo("</td>");
             }
+            echo("<td class='segment-move'>");
             echo($trgIDs[$x]);
             echo('</td></tr>');
         }

@@ -3,6 +3,7 @@
 
 # SQLite
 
+* on query optimization: https://sqlite.org/optoverview.html
 * FTS search: https://www.sqlitetutorial.net/sqlite-full-text-search/
 
 

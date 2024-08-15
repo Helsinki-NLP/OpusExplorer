@@ -68,12 +68,14 @@ function search_display_options($searchquery){
 function search($searchquery, $searchside, $langpair, $corpus='', $version='', $limit=10, $offset=0){
     // global $showMaxAlignments, $showScores, $showLengthRatio, $showRatings, $showMyRatings, $showEmpty;
     global $showLengthRatio, $showRatings, $showMyRatings;
+    global $linkDbFile;
 
     list($srclang,$trglang) = explode('-',$langpair);
     
     $srcDBH = new SQLite3('/media/OpusIndex/'.$srclang.'.fts5.db',SQLITE3_OPEN_READONLY);
     $trgDBH = new SQLite3('/media/OpusIndex/'.$trglang.'.fts5.db',SQLITE3_OPEN_READONLY);
-    $linksDBH = new SQLite3('/media/OpusIndex/'.$langpair.'.linked.db',SQLITE3_OPEN_READONLY);
+    // $linksDBH = new SQLite3('/media/OpusIndex/'.$langpair.'.linked.db',SQLITE3_OPEN_READONLY);
+    $linksDBH = new SQLite3($linkDbFile,SQLITE3_OPEN_READONLY);
 
     $bitexts = array();
     $corpusID = 0;
@@ -86,21 +88,14 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
     
     if ($searchquery){
         $condition = "sentence MATCH '".$searchquery."'";
-        if ($corpus && $version){
-            $results = $linksDBH->query("SELECT rowid FROM corpora WHERE corpus='$corpus' AND version='$version'");
-            while ($row = $results->fetchArray(SQLITE3_NUM)) {
-                $corpusID = $row[0];
-                $condition .= ' AND corpusID='.$corpusID;
-            }
-        }
         if ($limit) $limitstr = " LIMIT ".$limit;
         if ($offset) $offsetstr = " OFFSET ".$offset;
-        $start = microtime(true);
 
+        $start = microtime(true);
         if ($searchside == 'search target'){
             $linksDBH->exec("ATTACH DATABASE '/media/OpusIndex/".$trglang.".fts5.db' AS trgdb");
             $results = $linksDBH->query(
-                "SELECT sentID, linkID, highlight(sentences,0, '<b>', '</b>') sentence 
+                "SELECT sentID, linkID, bitextID, highlight(sentences,0, '<b>', '</b>') sentence 
                         FROM trgdb.sentences as trg
                         INNER JOIN linkedtarget ON trg.rowid=linkedtarget.sentID
                         WHERE ".$condition.$limitstr.$offsetstr);
@@ -109,7 +104,7 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
         else{
             $linksDBH->exec("ATTACH DATABASE '/media/OpusIndex/".$srclang.".fts5.db' AS srcdb");
             $results = $linksDBH->query(
-                "SELECT sentID, linkID, highlight(sentences,0, '<b>', '</b>') sentence 
+                "SELECT sentID, linkID, bitextID, highlight(sentences,0, '<b>', '</b>') sentence 
                         FROM srcdb.sentences as src
                         INNER JOIN linkedsource ON src.rowid=linkedsource.sentID
                         WHERE ".$condition.$limitstr.$offsetstr);
@@ -137,7 +132,8 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
         while ($row = $results->fetchArray(SQLITE3_NUM)) {
             $sentID=$row[0];
             $linkID=$row[1];
-            $sent=$row[2];
+            $bitextID=$row[2];
+            $sent=$row[3];
 
             // echo("get linked sentences\n");
             $start = microtime(true);
@@ -188,7 +184,20 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
 
             echo("<td class='leftalign'>");
             echo($trgText);
-            echo("\n</tr>\n");
+            
+            $textOK = ( strpos($srcText, 'SENTENCE NOT FOUND') === false &&
+                        strpos($trgText, 'SENTENCE NOT FOUND') === false );
+
+            if ($showMyRatings && $textOK){
+                echo('</td><td class="centeralign">');
+                print_rating_stars($bitextID,$linkID);
+            }
+            if ($showRatings && $textOK){
+                echo('</td><td class="centeralign">');
+                print_average_ratings($bitextID,$linkID);
+            }
+
+            echo("</td>\n</tr>\n");
             $shown++;
         }
         echo('</table>');

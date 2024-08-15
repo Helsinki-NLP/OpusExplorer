@@ -1,5 +1,63 @@
 <?php // -*-php-*-
 
+
+function get_lang_dbfile($lang){
+    global $DB_DIR;
+    if (file_exists($DB_DIR.$lang.'.fts5.db')) return $DB_DIR.$lang.'.fts5.db';
+    if (file_exists($DB_DIR.$lang.'.db')) return $DB_DIR.$lang.'.db';
+    return '';
+}
+
+function get_langidx_dbfile($lang){
+    global $DB_DIR;
+    if (file_exists($DB_DIR.$lang.'.ids.db')) return $DB_DIR.$lang.'.ids.db';
+    if (file_exists($DB_DIR.$lang.'.idx.db')) return $DB_DIR.$lang.'.idx.db';
+    return '';
+}
+
+$DB_DIR.$srclang.'.ids.db';
+
+
+function get_link_dbfile($langpair,$corpus,$version,$fromDoc,$toDoc){
+    global $DB_DIR;
+    if ($langpair){
+        if ($corpus && $version){
+            $linkdbfile = $DB_DIR.implode('/',['sqlite',$corpus,$version,$langpair.'.linked.db']);
+            if (file_exists($linkdbfile)) return $linkdbfile;
+        }
+        else{
+            $linkdbfile = $DB_DIR.implode('/',['sqlite',$langpair.'.linked.db']);
+            if (file_exists($linkdbfile)) return $linkdbfile;
+        }
+    }
+    return '';
+}
+
+function get_alignment_dbfile($langpair){
+    global $DB_DIR;
+    $dbfile = $DB_DIR.$langpair.'.db';
+    if (file_exists($dbfile)) return $dbfile;
+    return '';
+}
+
+function get_ratings_dbfile($langpair){
+    global $DB_DIR;
+    $dbfile = $DB_DIR.$langpair.'.stars.db';
+    if (file_exists($dbfile)) return $dbfile;
+    return '';
+}
+
+function get_bitext_dbfile($langpair){
+    global $DB_DIR;
+    $dbfile = $DB_DIR.'sqlite/'.$langpair.'.bitexts.db';
+    if (file_exists($dbfile)) return $dbfile;
+    if (file_exists($DB_DIR.$langpair.'.db')) return $DB_DIR.$langpair.'.db';
+    return '';
+}
+
+
+
+
 function get_bitextid($corpus, $version, $fromDoc, $toDoc){
     global $algDBH;
     
