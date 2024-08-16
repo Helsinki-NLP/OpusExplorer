@@ -202,18 +202,18 @@ function print_horizontal_bitext_table($results,
                                        $showMyRatings=1, $showRatings=0){
 
     global $srcDBH, $srcIdxDBH, $trgDBH, $trgIdxDBH;
-    global $langpair, $searchable;
+    global $langpair, $searchable, $showModified;
     
     echo('<table class="bitext">');
     echo("<tr><th>IDs</th><th>".$fromDoc);
-    if ($searchable){
+    if ($searchable && ! $showModified){
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
     }
     echo("</th>");
     if ($showScores) echo('<th>score</th>');
     if ($showLengthRatio) echo('<th>ratio</th>');
     echo("<th>".$toDoc);
-    if ($searchable){
+    if ($searchable && ! $showModified){
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
     }
     echo("</th><th>IDs</th>");

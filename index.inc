@@ -1,6 +1,12 @@
 <?php // -*-php-*-
 
 
+function get_lang_ftsfile($lang){
+    global $DB_DIR;
+    if (file_exists($DB_DIR.$lang.'.fts5.db')) return $DB_DIR.$lang.'.fts5.db';
+    return '';
+}
+
 function get_lang_dbfile($lang){
     global $DB_DIR;
     if (file_exists($DB_DIR.$lang.'.fts5.db')) return $DB_DIR.$lang.'.fts5.db';
@@ -24,6 +30,13 @@ function get_link_dbfile($langpair,$corpus,$version,$fromDoc,$toDoc){
         if ($corpus && $version){
             $linkdbfile = $DB_DIR.implode('/',['sqlite',$corpus,$version,$langpair.'.linked.db']);
             if (file_exists($linkdbfile)) return $linkdbfile;
+            // if a specific bitext is selected than the general index would also work
+            // TODO: if we change to only include the latest version in that corpus
+            //       then we also need to check the version of the corpus here!
+            if ($fromDoc && $toDoc){
+                $linkdbfile = $DB_DIR.implode('/',['sqlite',$langpair.'.linked.db']);
+                if (file_exists($linkdbfile)) return $linkdbfile;
+            }
         }
         else{
             $linkdbfile = $DB_DIR.implode('/',['sqlite',$langpair.'.linked.db']);

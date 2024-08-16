@@ -90,57 +90,57 @@ function search_display_options($searchquery){
 
 
 
-function search($searchquery, $searchside, $langpair, $corpus='', $version='', $bitextID='', $limit=10, $offset=0){
+function search($searchquery, $searchside, $langpair, $corpus='', $version='', $bitextID='',
+                $limit=10, $offset=0, $orderByLinkID=0){
     // global $showMaxAlignments, $showScores, $showLengthRatio, $showRatings, $showMyRatings, $showEmpty;
     global $showLengthRatio, $showRatings, $showMyRatings;
-    global $linkDbFile;
+    global $linkDbFile, $srcFtsFile, $trgFtsFile;
     global $fromDoc, $toDoc;
 
     list($srclang,$trglang) = explode('-',$langpair);
-    
-    $srcDBH = new SQLite3('/media/OpusIndex/'.$srclang.'.fts5.db',SQLITE3_OPEN_READONLY);
-    $trgDBH = new SQLite3('/media/OpusIndex/'.$trglang.'.fts5.db',SQLITE3_OPEN_READONLY);
-    // $linksDBH = new SQLite3('/media/OpusIndex/'.$langpair.'.linked.db',SQLITE3_OPEN_READONLY);
+
+    $srcDBH = new SQLite3($srcFtsFile,SQLITE3_OPEN_READONLY);
+    $trgDBH = new SQLite3($trgFtsFile,SQLITE3_OPEN_READONLY);
     $linksDBH = new SQLite3($linkDbFile,SQLITE3_OPEN_READONLY);
 
     $bitexts = array();
     $corpusID = 0;
-    $limitstr = '';
-    $offsetstr = '';
-
-    // if ($corpus && $version)
-        // echo("search $corpus / $version");
-    // echo("search $corpus / $version / $searchside");
     
     $srcquery = $searchside == 'search source' ? $searchquery : '';
     $trgquery = $searchside == 'search target' ? $searchquery : '';
-    
-    if ($searchquery){
-        $condition = "sentence MATCH '".$searchquery."'";
-        if ($bitextID) $condition .= ' AND bitextID='.$bitextID;
-        if ($limit) $limitstr = " LIMIT ".$limit;
-        if ($offset) $offsetstr = " OFFSET ".$offset;
 
-        $start = microtime(true);
+    $conditions = array();
+    if ($searchquery) array_push($conditions, "sentence MATCH '".$searchquery."'");
+    if ($bitextID)    array_push($conditions, 'bitextID='.$bitextID);
+    $condition = implode(' AND ',$conditions);
+
+    $ordering = $orderByLinkID ? ' ORDER BY linkID ' : '';    
+    $limitstr = $limit ?  " LIMIT ".$limit : '';
+    $offsetstr = $offset ? " OFFSET ".$offset : '';
+
+    $start = microtime(true);
+    if ($searchquery){
         if ($searchside == 'search target'){
             $linksDBH->exec("ATTACH DATABASE '/media/OpusIndex/".$trglang.".fts5.db' AS trgdb");
             $results = $linksDBH->query(
-                "SELECT sentID, linkID, bitextID, highlight(sentences,0, '<b>', '</b>') sentence 
+                "SELECT linkID, bitextID, sentID, highlight(sentences,0, '<b>', '</b>') sentence 
                         FROM trgdb.sentences as trg
                         INNER JOIN linkedtarget ON trg.rowid=linkedtarget.sentID
-                        WHERE ".$condition.$limitstr.$offsetstr);
-
+                        WHERE ".$condition.$ordering.$limitstr.$offsetstr);
         }
         else{
             $linksDBH->exec("ATTACH DATABASE '/media/OpusIndex/".$srclang.".fts5.db' AS srcdb");
             $results = $linksDBH->query(
-                "SELECT sentID, linkID, bitextID, highlight(sentences,0, '<b>', '</b>') sentence 
+                "SELECT linkID, bitextID, sentID, highlight(sentences,0, '<b>', '</b>') sentence 
                         FROM srcdb.sentences as src
                         INNER JOIN linkedsource ON src.rowid=linkedsource.sentID
-                        WHERE ".$condition.$limitstr.$offsetstr);
+                        WHERE ".$condition.$ordering.$limitstr.$offsetstr);
         }
-        $queryTime = microtime(true) - $start;
     }
+    else{
+        $results = $linksDBH->query("SELECT DISTINCT linkID, bitextID FROM linkedsource WHERE ".$condition.$ordering.$limitstr.$offsetstr);
+    }
+    $queryTime = microtime(true) - $start;
     
     $fetchSentenceIdTime = 0;
     $fetchSentenceTime = 0;
@@ -151,12 +151,22 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
         search_display_options($searchquery);
         $shown=0;
         echo("<table class='bitext'>\n");
-        echo("<tr><th>link ID</th><th>source language");
+        echo("<tr><th>link ID");
+        
+        // order by link ID is only allowed if we don't query for specific sentences
+        // --> this becomes super slow otherwise
+        if (! $searchquery ){
+            $query = make_query(['sortLinkIDs' => (! $orderByLinkID)]);
+            $sortlabel = $orderByLinkID ? '&#x29BB;' : '⇓';
+        }
+        
+        echo(' <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$sortlabel.'</a>');
+        echo("</th><th style='text-align: right;'>source language");
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $srcquery, 1, 0);
         echo("</th>");
         if ($showScores) echo('<th>score</th>');
         if ($showLengthRatio) echo('<th>ratio</th>');
-        echo("<th>target language");
+        echo("<th style='text-align: right;'>target language");
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $trgquery, 0, 1);
         echo("</th>");
         if ($showMyRatings) echo('<th>my ratings</th>');
@@ -164,10 +174,10 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
         echo("</tr>");
 
         while ($row = $results->fetchArray(SQLITE3_NUM)) {
-            $sentID=$row[0];
-            $linkID=$row[1];
-            $bitextID=$row[2];
-            $sent=$row[3];
+            $linkID=$row[0];
+            $bitextID=$row[1];
+            if (count($row) > 2) $sentID=$row[2];
+            if (count($row) > 3) $sent=$row[3];
 
             // echo("get linked sentences\n");
             $start = microtime(true);

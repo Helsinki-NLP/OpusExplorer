@@ -102,7 +102,7 @@ $modifiedBitextExists = false;
 $modifiedBitext = false;
 
 $searchquery = get_param('search','');
-
+$orderByLinkID = get_param('sortLinkIDs',0);
 
 ## check whether we have a new rating to take care of
 
@@ -115,9 +115,12 @@ if ($srclang && $trglang){
     $srcIdxDbFile   = get_langidx_dbfile($srclang);
     $trgIdxDbFile   = get_langidx_dbfile($trglang);
     $bitextDbFile   = get_bitext_dbfile($langpair);
-    $linkDbFile     = get_link_dbfile($langpair,$corpus,$version,$fromDoc,$toDoc);
     $algDbFile      = get_alignment_dbfile($langpair);
     $algStarsDbFile = get_ratings_dbfile($langpair);
+
+    $srcFtsFile     = get_lang_ftsfile($srclang);
+    $trgFtsFile     = get_lang_ftsfile($trglang);
+    $linkDbFile     = get_link_dbfile($langpair,$corpus,$version,$fromDoc,$toDoc);
 
     if ($srcDbFile)    $srcDBH    = new SQLite3($srcDbFile,SQLITE3_OPEN_READONLY);
     if ($trgDbFile)    $trgDBH    = new SQLite3($trgDbFile,SQLITE3_OPEN_READONLY);
@@ -126,8 +129,8 @@ if ($srclang && $trglang){
     if ($algDbFile)    $algDBH    = new SQLite3($algDbFile,SQLITE3_OPEN_READONLY);
     if ($bitextDbFile) $bitextDBH = new SQLite3($bitextDbFile,SQLITE3_OPEN_READONLY);
 
-    $browsable = ($srcIdxDbFile && $trgIdxDbFile && $algDbFile);
-    $searchable = ($linkDbFile != '');
+    $browsable = ( $srcDbFile && $trgDbFile && $srcIdxDbFile && $trgIdxDbFile && $algDbFile);
+    $searchable = ( $srcFtsFile && $trgFtsFile && $linkDbFile );
 }
 
 if ($rating){
@@ -144,23 +147,25 @@ if ($rating){
 
 
 $query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '', 'search' => '',
-                     'corpus' => '', 'fromDoc' => '', 'toDoc' => '', 'aligntype' => '', 'offset' => 0]);
+                     'corpus' => '', 'fromDoc' => '', 'toDoc' => '',
+                     'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0]);
 echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">OPUS</a> / ');
 
 if ($srclang && $trglang){
     $query = make_query(['corpus' => '', 'fromDoc' => '', 'toDoc' => '', 'search' => '',
-                         'aligntype' => '', 'offset' => 0]);
+                         'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0]);
     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$langpair.'</a> / ');
     
     if ($corpus && $version){
-        $query = make_query(['fromDoc' => '', 'toDoc' => '', 'aligntype' => '', 'search' => '', 'offset' => 0]);
+        $query = make_query(['fromDoc' => '', 'toDoc' => '', 'aligntype' => '',
+                             'search' => '', 'offset' => 0, 'sortLinkIDs' => 0]);
         echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.' / '.$version.'</a> / ');
         
         if ($fromDoc && $toDoc){
             if (!$bitextID) $bitextID = get_bitextid($corpus, $version, $fromDoc, $toDoc);
             set_param('bitextID',$bitextID);
             set_link_db($bitextID);
-            $query = make_query(['aligntype' => '', 'offset' => 0, 'search' => '']);
+            $query = make_query(['aligntype' => '', 'offset' => 0, 'search' => '', 'sortLinkIDs' => 0]);
             echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$fromDoc.'</a> / ');
             if ($browsable && ! $searchquery) bitext_browsing_links();
         }
@@ -169,7 +174,8 @@ if ($srclang && $trglang){
         $bitextID = 0;
         set_param('bitextID',$bitextID);
     }
-    if ( ($searchable && ! $bitextID) || ($searchable && $searchquery) || ($searchable && ! $browsable) ){
+    // if ( ($searchable && ! $bitextID) || ($searchable && $searchquery) || ($searchable && ! $browsable) ){
+    if ($searchable && ! $bitextID){
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $searchquery);
     }
 }
@@ -198,11 +204,18 @@ if ($searchable){
 }
 if ($srclang && $trglang){    
     if ($corpus && $version){
-        if ($fromDoc && $toDoc && $browsable){
+        if ($fromDoc && $toDoc){
             //print_links($corpus, $version, $fromDoc, $toDoc);
-            print_bitext($corpus, $version, $fromDoc, $toDoc,
-                         $fromDocID, $toDocID, $bitextID,
-                         $alignType, $offset);
+            if ($browsable){
+                print_bitext($corpus, $version, $fromDoc, $toDoc,
+                             $fromDocID, $toDocID, $bitextID,
+                             $alignType, $offset);
+            }
+            else{
+                search('', '',
+                       $langpair, $corpus, $version, $bitextID,
+                       $showMaxAlignments, $offset, $orderByLinkID);
+            }
         }
         else{
             print_document_list($corpus, $version, $offset);
@@ -328,29 +341,31 @@ function print_langpair_list(){
 }
 
 
-function find_bitext_dbs($path){
-    
+function find_bitext_dbs($path){    
     $langpairs = array();    
     if ($handle = opendir($path)) {
         while (false !== ($entry = readdir($handle))) {
-            if (substr($entry,-3) == '.db') {
-                if (substr($entry,-10) == '.linked.db') {
-                    $lang = basename($entry,'.linked.db');
-                    $parts = explode('-',$lang);
-                    if (count($parts) == 2){
-                        $langpairs[$lang] = true;
-                    }
-                }
-                elseif (substr($entry,-9) != '.stars.db') {
-                    $lang = basename($entry,'.db');
-                    $parts = explode('-',$lang);
-                    if (count($parts) == 2){
-                        $langpairs[$lang] = true;
+            $parts = explode('.',$entry);
+            if (array_pop($parts) == 'db'){
+                if (count($parts) == 1){
+                    if (count(explode('-',$parts[0])) == 2){
+                        $langpairs[$parts[0]] = true;
                     }
                 }
             }
         }
         closedir($handle);
+    }
+    if ($handle = opendir($path.'/sqlite')) {
+        while (false !== ($entry = readdir($handle))) {
+            if (substr($entry,-10) == '.linked.db') {
+                $lang = basename($entry,'.linked.db');
+                $parts = explode('-',$lang);
+                if (count($parts) == 2){
+                    $langpairs[$lang] = true;
+                }
+            }
+        }
     }
     return $langpairs;
 }
