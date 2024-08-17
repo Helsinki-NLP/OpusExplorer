@@ -4,11 +4,11 @@
 // $DB_DIR = '/media/OPUS-MT/OpusIndex/';
 $DB_DIR = '/media/OpusIndex/';
 
-$USER_DATADIR    = $DB_DIR;
-$USER_NAME_FILE  = $USER_DATADIR.'/users.php';
-$USER_DB         = $USER_DATADIR.'/users.db';
-$ALLOW_NEW_USERS = 1;
-
+$USER_DATADIR      = $DB_DIR;
+$USER_NAME_FILE    = $USER_DATADIR.'/users.php';
+$USER_DB           = $USER_DATADIR.'/users.db';
+$ALLOW_NEW_USERS   = 1;
+$ALLOW_GUEST_USERS = 1;
 
 $DOCUMENT_LIST_LIMIT = 25;
 $SHOW_ALIGNMENTS_LIMIT = 25;
@@ -48,6 +48,13 @@ $segmentOtherBgColor = '#fcc';
 $segmentOtherBorderColor = 'red';
 
 
+function clean_input($data) {
+  $data = trim($data);
+  $data = stripslashes($data);
+  $data = strip_tags($data);
+  $data = htmlspecialchars($data);
+  return $data;
+}
 
 function get_param($key, $default=''){
 

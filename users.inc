@@ -24,6 +24,18 @@ function logged_in ( ) {
         return true;
     }
 
+    global $ALLOW_GUEST_USERS;
+    
+    if ($ALLOW_GUEST_USERS){
+        if (isset($_POST['user']) && isset($_POST['password'])){
+            if ($_POST['user'] == 'guest' && $_POST['password'] == 'guest'){
+                $_SESSION['user'] = 'guest';
+                $_SESSION['email'] = 'anonymous';
+                return true;
+            }
+        }
+    }
+
     global $ALLOW_NEW_USERS;
     global $USER_DB;
 
@@ -90,10 +102,13 @@ function logged_in ( ) {
 
     if ($ALLOW_NEW_USERS){
         echo "Login or create a new user using the form below!<br/>";
-        echo "Allowed characters for your username: a-zA-Z0-9_<br /><br/>";
+        echo "Allowed characters for your username: a-zA-Z0-9_<br />";
+    }
+    if ($ALLOW_GUEST_USERS){
+        echo "There is a guest account for testing: use username = guest, password = guest<br />";
     }
 
-    echo "<form action=\"$PHP_SELF\" method=\"post\"><table>";
+    echo "<br/><form action=\"$PHP_SELF\" method=\"post\"><table>";
     echo '<tr><td>username:</td><td><input type="user" name="user"></td></tr>';
     echo '<tr><td>  e-mail:</td><td><input type="email" name="email"></td></tr>';
     echo '<tr><td>password:</td><td><input type="password" name="password"></td></tr>';
@@ -196,6 +211,10 @@ function add_user($user_db,$user,$password, $email){
     }
     if (!$password){
         echo "No password given! Try again!<br/>";
+        return false;
+    }
+    if ($user == 'guest'){
+        echo "Username 'guest' is not allowed! Try again!<br/>";
         return false;
     }
     if (!preg_match('/^[a-zA-Z0-9_]+$/',$user)){

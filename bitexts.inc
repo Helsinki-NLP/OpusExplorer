@@ -201,7 +201,6 @@ function print_horizontal_bitext_table($results,
                                        $showScores=1, $showLengthRatio=0,
                                        $showMyRatings=1, $showRatings=0){
 
-    global $srcDBH, $srcIdxDBH, $trgDBH, $trgIdxDBH;
     global $langpair, $searchable, $showModified;
     
     echo('<table class="bitext">');
@@ -226,15 +225,10 @@ function print_horizontal_bitext_table($results,
         $srcIDs = explode(' ',$row[0]);
         $trgIDs = explode(' ',$row[1]);
         $linkID = $row[3];
-            
-        $srcSents = array();
-        foreach ($srcIDs as $srcID){
-            array_push($srcSents,get_sentence($srcDBH, $srcIdxDBH, $corpus, $version, $fromDoc, $srcID, $fromDocID));
-        }
-        $trgSents = array();
-        foreach ($trgIDs as $trgID){
-            array_push($trgSents,get_sentence($trgDBH, $trgIdxDBH, $corpus, $version, $toDoc, $trgID, $toDocID));
-        }
+
+        list($srcSents, $trgSents) = get_linked_sentences($linkID, $srcIDs, $trgIDs,
+                                                          $corpus, $version, $fromDoc, $toDoc,
+                                                          $fromDocID, $toDocID);        
         $srcText = implode(' ',$srcSents);
         $trgText = implode(' ',$trgSents);
 
@@ -287,8 +281,6 @@ function print_vertical_bitext_table($results,
                                      $fromDocID, $toDocID, $bitextID,
                                      $showScores=1, $showLengthRatio=0,
                                      $showMyRatings=1, $showRatings=0){
-
-    global $srcDBH, $srcIdxDBH, $trgDBH, $trgIdxDBH;
     
     echo('<table class="bitext">');
     
@@ -312,15 +304,11 @@ function print_vertical_bitext_table($results,
         $srcIDs = explode(' ',$row[0]);
         $trgIDs = explode(' ',$row[1]);
         $linkID = $row[3];
-            
-        $srcSents = array();
-        foreach ($srcIDs as $srcID){
-            array_push($srcSents,get_sentence($srcDBH, $srcIdxDBH, $corpus, $version, $fromDoc, $srcID, $fromDocID));
-        }
-        $trgSents = array();
-        foreach ($trgIDs as $trgID){
-            array_push($trgSents,get_sentence($trgDBH, $trgIdxDBH, $corpus, $version, $toDoc, $trgID, $toDocID));
-        }
+
+        list($srcSents, $trgSents) = get_linked_sentences($linkID, $srcIDs, $trgIDs,
+                                                          $corpus, $version, $fromDoc, $toDoc,
+                                                          $fromDocID, $toDocID);        
+        
         $srcText = implode(' ',$srcSents);
         $trgText = implode(' ',$trgSents);
 
@@ -401,15 +389,11 @@ function print_editable_bitext_table($results,
                                      $showScores=1, $showLengthRatio=0,
                                      $showMyRatings=1, $showRatings=0){
 
-    global $srcDBH, $srcIdxDBH, $trgDBH, $trgIdxDBH;
     global $segmentFirstBgColor, $segmentFirstBorderColor;
     global $segmentOtherBgColor, $segmentOtherBorderColor;
 
     $PHP_SELF=$_SERVER['PHP_SELF'];
 
-    // show scores does not make sense if we can edit the alignments
-    // $showScores = 0;
-    
     echo('<table class="bitext">');
     echo("<tr><th>$fromDoc</th>");
     if ($showScores) echo('<th>score</th>');
@@ -431,15 +415,11 @@ function print_editable_bitext_table($results,
         $trgIDs = explode(' ',trim($row[1]));
         $linkID = $row[3];
         $nextLinkID = $linkID+1;
-            
-        $srcSents = array();
-        foreach ($srcIDs as $srcID){
-            array_push($srcSents,get_sentence($srcDBH, $srcIdxDBH, $corpus, $version, $fromDoc, $srcID, $fromDocID));
-        }
-        $trgSents = array();
-        foreach ($trgIDs as $trgID){
-            array_push($trgSents,get_sentence($trgDBH, $trgIdxDBH, $corpus, $version, $toDoc, $trgID, $toDocID));
-        }
+
+        list($srcSents, $trgSents) = get_linked_sentences($linkID, $srcIDs, $trgIDs,
+                                                          $corpus, $version, $fromDoc, $toDoc,
+                                                          $fromDocID, $toDocID);        
+        
         $srcText = implode(' ',$srcSents);
         $trgText = implode(' ',$trgSents);
 
@@ -624,108 +604,6 @@ function print_editable_bitext_table($results,
 }
 
 
-
-// slightly different style (sentences on separate lines in multi-sentence segments)
-
-function print_new_horizontal_bitext_table($results,
-                            $corpus, $version, $fromDoc, $toDoc,
-                            $fromDocID, $toDocID, $bitextID,
-                            $showScores=1, $showLengthRatio=0,
-                            $showMyRatings=1, $showRatings=0){
-
-    global $langpair, $searchable;
-    global $srcDBH, $srcIdxDBH, $trgDBH, $trgIdxDBH;
-    global $segmentFirstBgColor, $segmentFirstBorderColor;
-    global $segmentOtherBgColor, $segmentOtherBorderColor;
-
-    
-    echo('<table class="bitext">');
-    echo("<tr><th>".$fromDoc);
-    if ($searchable){
-        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
-    }
-    echo("</th>");
-    if ($showScores) echo('<th>score</th>');
-    if ($showLengthRatio) echo('<th>ratio</th>');
-    echo("<th>$toDoc</th>");
-    if ($showMyRatings) echo('<th>my ratings</th>');
-    if ($showRatings) echo('<th>ratings</th>');
-    echo("</tr>");
-    $i = 0;
-    while ($row = $results->fetchArray(SQLITE3_NUM)) {
-        $i++;
-        $srcIDs = explode(' ',$row[0]);
-        $trgIDs = explode(' ',$row[1]);
-        $linkID = $row[3];
-            
-        $srcSents = array();
-        foreach ($srcIDs as $srcID){
-            array_push($srcSents,get_sentence($srcDBH, $srcIdxDBH, $corpus, $version, $fromDoc, $srcID, $fromDocID));
-        }
-        $trgSents = array();
-        foreach ($trgIDs as $trgID){
-            array_push($trgSents,get_sentence($trgDBH, $trgIdxDBH, $corpus, $version, $toDoc, $trgID, $toDocID));
-        }
-        $srcText = implode(' ',$srcSents);
-        $trgText = implode(' ',$trgSents);
-
-        echo('<tr><td class="bitext-src"><table class="segment">');
-        for ($x=0; $x<count($srcIDs);$x++){
-            echo("<tr><td class='segment-id'>");
-            echo($srcIDs[$x]);
-            echo("</td><td class='segment-src'>");
-            echo($srcSents[$x]);
-            echo('</td></tr>');
-        }
-        echo('</table></td>');
-            
-        if ($showScores){
-            $score = $row[2];
-            $color = score_color($score);
-            echo("<td bgcolor='$color' class='centeralign'>$score</td>");
-        }
-        if ($showLengthRatio){
-            $srcLen = strlen($srcText);
-            $trgLen = strlen($trgText);
-            $ratio = 0;
-            if ($srcLen or $trgLen){
-                $ratio = $srcLen > $trgLen ? $trgLen / $srcLen : $srcLen / $trgLen;
-            }
-            $color = score_color($ratio);
-            $pretty_ratio = sprintf('%5.3f',$ratio);
-            echo("<td bgcolor='$color' class='centeralign'>$pretty_ratio</td>");
-        }
-            
-
-        echo('<td class="bitext-trg"><table class="segment">');
-        for ($x=0; $x<count($trgIDs);$x++){
-            echo('<tr><td class="segment-trg">');
-            echo($trgSents[$x]);
-            echo('</td><td class="segment-id">');
-            echo($trgIDs[$x]);
-            echo('</td></tr>');
-        }
-        echo('</table></td>');
-
-        $textOK = ( strpos($srcText, 'SENTENCE NOT FOUND') === false &&
-                    strpos($trgText, 'SENTENCE NOT FOUND') === false );
-
-        if ($showMyRatings && $textOK){
-            echo('<td class="centeralign">');
-            print_rating_stars($bitextID,$linkID);
-            echo('</td>');
-        }
-        if ($showRatings && $textOK){
-            echo('<td class="centeralign">');
-            print_average_ratings($bitextID,$linkID);
-            echo('</td>');
-        }
-            
-        echo('</tr>'."\n");
-    }
-    echo('</table>');
-    return $i;
-}
 
 
 

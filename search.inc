@@ -1,14 +1,6 @@
 <?php // -*-php-*-
 
 
-function clean_input($data) {
-  $data = trim($data);
-  $data = stripslashes($data);
-  $data = strip_tags($data);
-  $data = htmlspecialchars($data);
-  return $data;
-}
-
 
 function print_search_form($langpair, $corpus='', $version='', $fromDoc='', $toDoc='', $bitextID=0,
                            $searchquery='', $allowSourceSearch=1, $allowTargetSearch=1){
@@ -61,6 +53,14 @@ function search_navigation($searchquery, $offset, $showMaxAlignments){
 function search_display_options($searchquery){
     global $showScores, $showLengthRatio, $showRatings, $showMyRatings, $tableStyle;
 
+    if ($showScores){
+        $query = make_query(['showScores' => 0]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide scores</a>');
+    }
+    else{
+        $query = make_query(['showScores' => 1]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show scores</a>');
+    }
     if ($showLengthRatio){
         $query = make_query(['search' => $searchquery, 'showLengthRatio' => 0]);
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide length ratio</a>');
@@ -93,7 +93,7 @@ function search_display_options($searchquery){
 function search($searchquery, $searchside, $langpair, $corpus='', $version='', $bitextID='',
                 $limit=10, $offset=0, $orderByLinkID=0){
     // global $showMaxAlignments, $showScores, $showLengthRatio, $showRatings, $showMyRatings, $showEmpty;
-    global $showLengthRatio, $showRatings, $showMyRatings;
+    global $showScores, $showLengthRatio, $showRatings, $showMyRatings;
     global $linkDbFile, $srcFtsFile, $trgFtsFile;
     global $fromDoc, $toDoc;
 
@@ -181,12 +181,11 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
 
             // echo("get linked sentences\n");
             $start = microtime(true);
-            list($srcIDs,$trgIDs) = get_linked_sentences($linksDBH, $linkID);
+            list($srcIDs,$trgIDs) = get_linked_sentence_ids($linksDBH, $linkID);
             $fetchSentenceIdTime += microtime(true) - $start;
 
             $srcSents = array();
             foreach ($srcIDs as $id){
-                $start = microtime(true);
                 $start = microtime(true);
                 if ($searchside == 'search source' && $id == $sentID)
                     array_push($srcSents, $sent);
@@ -214,6 +213,12 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
             echo($srcText);
             echo("</td>\n");
 
+            if ($showScores){
+                $link = get_link($linkID);
+                $score = array_key_exists('alignerScore',$link) ? $link['alignerScore'] : 0;
+                $color = score_color($score);
+                echo("</td><td bgcolor='$color' class='centeralign'>$score");
+            }
             if ($showLengthRatio){
                 $srcLen = strlen(str_replace('<b>','',str_replace('</b>','',$srcText)));
                 $trgLen = strlen(str_replace('<b>','',str_replace('</b>','',$trgText)));
@@ -260,7 +265,7 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
 }
 
 
-function get_linked_sentences($linksDBH, $linkID){
+function get_linked_sentence_ids($linksDBH, $linkID){
     // echo("SELECT sentID FROM linkedsource WHERE linkID=$linkID\n");
     $results = $linksDBH->query("SELECT sentID FROM linkedsource WHERE linkID=$linkID");
     $srcIDs = array();

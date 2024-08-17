@@ -39,8 +39,11 @@ function get_alignment_rating($bitextID,$linkID,$user=''){
     if (! file_exists($algStarsDbFile) ) return 0;
 
     $DBH = new SQLite3($algStarsDbFile,SQLITE3_OPEN_READONLY);
+
+
     
     if ($user){
+        if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
         $results = $DBH->query("SELECT rating FROM ratings WHERE bitextID=$bitextID AND linkID=$linkID AND user='$user'");
         if ($results){
             while ($row = $results->fetchArray(SQLITE3_NUM)) {
@@ -62,6 +65,10 @@ function get_alignment_rating($bitextID,$linkID,$user=''){
 
 function add_alignment_rating($bitextID,$linkID,$user,$rating){
     global $algStarsDbFile;
+
+    // for guest users: add the referring IP address
+    if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
+    
     // echo("add rating to $algStarsDbFile");
     if (! file_exists($algStarsDbFile) ){
         $DBH = new SQLite3($algStarsDbFile);

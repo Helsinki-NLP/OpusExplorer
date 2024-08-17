@@ -83,6 +83,18 @@ function get_bitextid($corpus, $version, $fromDoc, $toDoc){
     return undef;
 }
 
+function get_link($linkID){
+    global $algDBH;
+    if ($algDBH){
+        $result = $algDBH->query("SELECT * FROM links WHERE rowid=".$linkID);
+        if ($result){
+            while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+                return $row;
+            }
+        }
+    }
+    return array();
+}
 
 function get_alignments($algDBH, $corpus, $version, $fromDoc, $toDoc,
                         $fromDocID=0, $toDocID=0, $bitextID=0, $type='all', $offset=0){
@@ -117,6 +129,68 @@ function get_alignments($algDBH, $corpus, $version, $fromDoc, $toDoc,
     // echo("SELECT srcIDs,trgIDs,alignerScore,rowid FROM $table $conditions ORDER BY rowid $limit");
     return $algDBH->query("SELECT srcIDs,trgIDs,alignerScore,rowid FROM $table $conditions ORDER BY rowid $limit");
 }
+
+
+
+// get sentences that are aligned to each other for a given link
+// --> use sentence index files if they exist
+// --> otherwise use link index (internal sentence IDs mapped to LinkIDs)
+
+function get_linked_sentences($linkID, $srcIDs, $trgIDs,
+                              $corpus='', $version='', $fromDoc='', $toDoc='',
+                              $fromDocID=0, $toDocID=0){
+    global $linkDbFile;
+    global $srcDBH, $trgDBH;
+    global $srcIdxDBH, $trgIdxDBH;
+
+    $srcSents = array();
+    $trgSents = array();
+    
+    if ($srcIdxDBH && $trgIdxDBH){
+        // echo("... use indexDB");
+        foreach ($srcIDs as $srcID){
+            array_push($srcSents,get_sentence($srcDBH, $srcIdxDBH, $corpus, $version, $fromDoc, $srcID, $fromDocID));
+        }
+        foreach ($trgIDs as $trgID){
+            array_push($trgSents,get_sentence($trgDBH, $trgIdxDBH, $corpus, $version, $toDoc, $trgID, $toDocID));
+        }
+    }
+    elseif ($linkDbFile){
+        // echo("... use linkDB");
+        $linksDBH = new SQLite3($linkDbFile,SQLITE3_OPEN_READONLY);
+        list($srcSentIDs,$trgSentIDs) = get_linked_sentence_ids($linksDBH, $linkID);        
+        foreach ($srcSentIDs as $id){
+            array_push($srcSents, fetch_sentence($srcDBH, $id));
+        }
+        foreach ($trgSentIDs as $id){
+            array_push($trgSents, fetch_sentence($trgDBH, $id));
+        }
+    }
+    return array($srcSents, $trgSents);
+}
+
+
+
+function get_linked_source_sentences($linkID, $sentIDs, $corpus, $version, $doc, $docID){
+    global $srcDBH, $srcIdxDBH;
+    
+    $sents = array();
+    foreach ($sentIDs as $sentID){
+        array_push($sents,get_sentence($srcDBH, $srcIdxDBH, $corpus, $version, $doc, $sentID, $docID));
+    }
+    return $sents;
+}
+
+function get_linked_target_sentences($linkID, $sentIDs, $corpus, $version, $doc, $docID){
+    global $trgDBH, $trgIdxDBH;
+
+    $sents = array();
+    foreach ($sentIDs as $sentID){
+        array_push($sents,get_sentence($trgDBH, $trgIdxDBH, $corpus, $version, $doc, $sentID, $docID));
+    }
+    return $sents;
+}
+
 
 
 function get_sentence_id($SentDBH, $IdxDBH, $corpus, $version, $document, $sentID, $docID=0){

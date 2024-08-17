@@ -129,7 +129,7 @@ if ($srclang && $trglang){
     if ($algDbFile)    $algDBH    = new SQLite3($algDbFile,SQLITE3_OPEN_READONLY);
     if ($bitextDbFile) $bitextDBH = new SQLite3($bitextDbFile,SQLITE3_OPEN_READONLY);
 
-    $browsable = ( $srcDbFile && $trgDbFile && $srcIdxDbFile && $trgIdxDbFile && $algDbFile);
+    $browsable = ( $srcDbFile && $trgDbFile && $algDbFile && ( ($srcIdxDbFile && $trgIdxDbFile) || $linkDbFile ) );
     $searchable = ( $srcFtsFile && $trgFtsFile && $linkDbFile );
 }
 
@@ -146,14 +146,18 @@ if ($rating){
 /////////////////////////////////////////////////////////////////
 
 
-$query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '', 'search' => '',
+// $resetParams = array('search' => '', 'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0);
+
+$query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '',
                      'corpus' => '', 'fromDoc' => '', 'toDoc' => '',
-                     'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0]);
+                     'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
+                     'search' => '']);
 echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">OPUS</a> / ');
 
 if ($srclang && $trglang){
-    $query = make_query(['corpus' => '', 'fromDoc' => '', 'toDoc' => '', 'search' => '',
-                         'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0]);
+    $query = make_query(['corpus' => '', 'fromDoc' => '', 'toDoc' => '', 
+                         'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
+                         'search' => '']);
     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$langpair.'</a> / ');
     
     if ($corpus && $version){
@@ -190,52 +194,41 @@ echo('</br><hr>');
 /////////////////////////////////////////////////////////////////
 
 
-if ($searchable){
-    if ($searchquery){
-        $searchlimit = get_param('limit',10);
-        $searchoffset = get_param('offset',0);
-        $searchside = get_param('action','search source');
-        // $searchside = $_GET['action'];
-        search($searchquery, $searchside,
-               $langpair, $corpus, $version, $bitextID,
-               $searchlimit, $searchoffset);
-        exit();
-    }
+if ($searchquery && $searchable){
+    $searchlimit = get_param('limit',10);
+    $searchoffset = get_param('offset',0);
+    $searchside = get_param('action','search source');
+    search($searchquery, $searchside,
+           $langpair, $corpus, $version, $bitextID,
+           $searchlimit, $searchoffset);
 }
-if ($srclang && $trglang){    
+elseif ($srclang && $trglang){    
     if ($corpus && $version){
         if ($fromDoc && $toDoc){
-            //print_links($corpus, $version, $fromDoc, $toDoc);
             if ($browsable){
                 print_bitext($corpus, $version, $fromDoc, $toDoc,
                              $fromDocID, $toDocID, $bitextID,
                              $alignType, $offset);
             }
-            else{
-                search('', '',
-                       $langpair, $corpus, $version, $bitextID,
+            elseif ($searchable){
+                search('', '',$langpair, $corpus, $version, $bitextID,
                        $showMaxAlignments, $offset, $orderByLinkID);
             }
+            else{
+                echo("<b>Something is missing - cannot show this bitext ($fromDoc - $toDoc)</b><br/><br/>");
+                print_document_list($corpus, $version, $offset);
+            }
         }
-        else{
-            print_document_list($corpus, $version, $offset);
-        }
+        else print_document_list($corpus, $version, $offset);
     }
-    else{
-        print_corpus_list();
-    }
+    else print_corpus_list();
 }
-else{
-    print_langpair_list();
-}
+else print_langpair_list();
 
 
 /////////////////////////////////////////////////////////////////
 // functions
 /////////////////////////////////////////////////////////////////
-
-
-
 
 
 function print_document_list($corpus, $version, $offset=0){
