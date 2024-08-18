@@ -6,7 +6,6 @@ if (isset($_GET['logout'])){
     unset($_SESSION['user']);
 }
 
-
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 
@@ -14,52 +13,20 @@ if (isset($_GET['logout'])){
 <head>
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-       div.rightalign  {text-align: right; float: right; display: inline;}
-
-table.bitext   {width: 100%;}
-td.bitext-src  {width: 40%;}
-td.bitext-trg  {width: 40%;}
-
-table.segment  {width: 100%; border: none;}
-td.segment-id  {width: 10%; border: none;}
-td.segment-move {width: 10px; text-align: center; border: none; background-color: white;}
-td.segment-src {text-align: right; border: none;}
-td.segment-trg {text-align: left; border: none;}
-
-td.leftalign   {text-align: left;width: 40%;padding-left: 10px;}
-td.rightalign  {text-align: right;width: 40%;padding-right: 10px;}
-td.centeralign  {text-align: center;}
-table, th {
-  border: 2px solid;
-  border-collapse: collapse;
-}
-td {
-  border: 1px dotted;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-tr.bitextsrc   {
-    border-top: 2px solid;
-    background-color: #eeeeee;
-}
-tr.bitexttrg   { border-bottom: 1px solid solid;}
-  </style>
-
-<script type="text/javascript">
+  <meta name="viewport" content="width=device-width, initial-scale=1"> 
+  <link rel="stylesheet" href="index.css" type="text/css">
+  <script type="text/javascript">
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
 	}
-</script>
+  </script>
 </head>
 <body>
-
 <?php
-
-
 
 include('env.inc');
 include('users.inc');
+include('opus.inc');
 include('bitexts.inc');
 include('ratings.inc');
 include('index.inc');
@@ -71,6 +38,7 @@ echo('<h1>OpusExplorer</h1>');
 if (!logged_in()){
 	exit;
 }
+echo('<div class="rightalign"><a href="help.php">[help]</a><a href="index.php?logout">[logout]</a></div>');
 
 list($srclang, $trglang, $langpair) = get_langpair();
 
@@ -101,8 +69,10 @@ $allowEdit = in_array($corpus, $ALLOW_EDIT);
 $modifiedBitextExists = false;
 $modifiedBitext = false;
 
-$searchquery = get_param('search','');
+
 $orderByLinkID = get_param('sortLinkIDs',0);
+$searchquery = filter_var(get_param('search',''),FILTER_SANITIZE_STRING);
+$fromDocQuery = filter_var(get_param('fromDocQuery',''),FILTER_SANITIZE_STRING);
 
 ## check whether we have a new rating to take care of
 
@@ -146,30 +116,28 @@ if ($rating){
 /////////////////////////////////////////////////////////////////
 
 
-// $resetParams = array('search' => '', 'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0);
-
 $query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '',
                      'corpus' => '', 'fromDoc' => '', 'toDoc' => '',
                      'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
-                     'search' => '']);
+                     'search' => '', 'fromDocQuery' => '']);
 echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">OPUS</a> / ');
 
 if ($srclang && $trglang){
     $query = make_query(['corpus' => '', 'fromDoc' => '', 'toDoc' => '', 
                          'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
-                         'search' => '']);
+                         'search' => '', 'fromDocQuery' => '']);
     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$langpair.'</a> / ');
     
     if ($corpus && $version){
         $query = make_query(['fromDoc' => '', 'toDoc' => '', 'aligntype' => '',
-                             'search' => '', 'offset' => 0, 'sortLinkIDs' => 0]);
+                             'search' => '', 'offset' => 0, 'sortLinkIDs' => 0, 'fromDocQuery' => '']);
         echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.' / '.$version.'</a> / ');
         
         if ($fromDoc && $toDoc){
             if (!$bitextID) $bitextID = get_bitextid($corpus, $version, $fromDoc, $toDoc);
             set_param('bitextID',$bitextID);
             set_link_db($bitextID);
-            $query = make_query(['aligntype' => '', 'offset' => 0, 'search' => '', 'sortLinkIDs' => 0]);
+            $query = make_query(['aligntype' => '', 'offset' => 0, 'search' => '', 'sortLinkIDs' => 0, 'fromDocQuery' => '']);
             echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$fromDoc.'</a> / ');
             if ($browsable && ! $searchquery) bitext_browsing_links();
         }
@@ -183,9 +151,6 @@ if ($srclang && $trglang){
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $searchquery);
     }
 }
-
-// echo('<div class="rightalign"><a href="https://docs.google.com/presentation/d/1J6rPo08FOW9l0UbDjrHgTBFUggdT9LVaGENYH0t2a18/edit?usp=sharing">[help]</a><a href="index.php?logout">[logout]</a></div>');
-echo('<div class="rightalign"><a href="help.php">[help]</a><a href="index.php?logout">[logout]</a></div>');
 
 echo('</br><hr>');
 
@@ -219,148 +184,10 @@ elseif ($srclang && $trglang){
                 print_document_list($corpus, $version, $offset);
             }
         }
-        else print_document_list($corpus, $version, $offset);
+        else print_document_list($corpus, $version, $offset, $fromDocQuery);
     }
     else print_corpus_list();
 }
 else print_langpair_list();
-
-
-/////////////////////////////////////////////////////////////////
-// functions
-/////////////////////////////////////////////////////////////////
-
-
-function print_document_list($corpus, $version, $offset=0){
-    global $bitextDBH;
-    global $showMaxDocuments;
-    
-    $condition = "WHERE corpus='$corpus' AND version='$version'";
-    
-    $limit = "LIMIT $showMaxDocuments";
-    if ($offset){
-        $limit .= " OFFSET $offset";
-    }
-    $results = $bitextDBH->query("SELECT DISTINCT fromDoc,toDoc,rowid FROM bitexts $condition $limit");
-    
-    if ($results){
-        if ($offset){
-            $start = $offset - $showMaxDocuments;
-            if ($start < 0) $start = 0;
-            $query = make_query(['offset' => $start]);
-            echo '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">previous documents</a>'."\n";
-        }
-        else{
-            echo 'select a source document:'."\n";
-        }
-        echo('<ul>');
-        $count = 0;
-        while ($row = $results->fetchArray(SQLITE3_NUM)) {
-            $count++;
-            $fromDocID = get_source_document_id($corpus, $version, $row[0]);
-            $toDocID = get_target_document_id($corpus, $version, $row[1]);
-            $query = make_query(['fromDoc' => $row[0],
-                                 'toDoc' => $row[1],
-                                 'bitextID' => $row[2],
-                                 'fromDocID' => $fromDocID,
-                                 'toDocID' => $toDocID,
-                                 'offset' => 0]);
-            echo '<li><a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$row[0].'</a></li>'."\n";
-            // echo '<li><a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$row[0].' - '.$row[1].'</a></li>'."\n";
-            // echo($row[0]." - ".$row[1]."\n");
-        }
-        echo('</ul>');
-        if ($count >= $showMaxDocuments){
-            $query = make_query(['offset' => $offset + $count]);
-            echo '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">more documents</a>'."\n";
-        }
-    }
-}
-
-function print_corpus_list(){
-    global $bitextDBH;
-    echo('<ul>');
-    $results = $bitextDBH->query("SELECT DISTINCT corpus,version FROM aligned_corpora ORDER BY corpus");
-    // $results = $bitextDBH->query("SELECT DISTINCT corpus,version FROM bitexts ORDER BY corpus");
-    if ($results){
-        $corpus = '';
-        $versions = array();
-        $link = '';
-        $versionLinks = '';
-        while ($row = $results->fetchArray(SQLITE3_NUM)) {
-            if ($row[0] != $corpus){
-                // if ($corpus) echo "<li>$link$corpus</a>: $versionLinks</li>\n";
-                // if ($corpus) echo "<li>$corpus: [${link}latest</a>] $versionLinks</li>\n";
-                if ($corpus) echo "<li>$corpus: $versionLinks</li>\n";
-                $corpus = $row[0];
-                $versionLinks = '';
-            }
-            array_push($versions,$row[1]);
-            $version = $row[1];
-            $query = make_query(['corpus' => $corpus, 'version' => $version, 'search' => '']);
-            $link = '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">';
-            $versionLinks .= ' ['.$link.$version.'</a>]';
-        }
-        // if ($corpus) echo "<li>$link$corpus</a>: $versionLinks</li>\n";
-        // if ($corpus) echo "<li>$corpus: [${link}latest</a>] $versionLinks</li>\n";
-        if ($corpus) echo "<li>$corpus: $versionLinks</li>\n";
-    }
-    echo('</ul>');
-}
-
-function print_langpair_list(){
-    global $DB_DIR;
-    
-    // $langpairs = array('fi-uk');
-    $langpairs = find_bitext_dbs($DB_DIR);
-    ksort($langpairs);
-
-    echo('<ul>');
-    foreach ($langpairs as $langpair => $val){
-        list($srclang,$trglang) = explode('-',$langpair);
-        $srclangname = Locale::getDisplayName($srclang, 'en');
-        $trglangname = Locale::getDisplayName($trglang, 'en');
-        $query = make_query(['langpair' => $langpair, 'search' => '']);
-        echo '<li><a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">';
-        echo $langpair.' ('.$srclangname.' - '.$trglangname;
-        echo ')</a></li>'."\n";
-    }
-    echo('</ul>');
-    /*
-    if (!class_exists('Locale')) {
-        echo ('No php_intl extension installed.');
-    }
-    */
-}
-
-
-function find_bitext_dbs($path){    
-    $langpairs = array();    
-    if ($handle = opendir($path)) {
-        while (false !== ($entry = readdir($handle))) {
-            $parts = explode('.',$entry);
-            if (array_pop($parts) == 'db'){
-                if (count($parts) == 1){
-                    if (count(explode('-',$parts[0])) == 2){
-                        $langpairs[$parts[0]] = true;
-                    }
-                }
-            }
-        }
-        closedir($handle);
-    }
-    if ($handle = opendir($path.'/sqlite')) {
-        while (false !== ($entry = readdir($handle))) {
-            if (substr($entry,-10) == '.linked.db') {
-                $lang = basename($entry,'.linked.db');
-                $parts = explode('-',$lang);
-                if (count($parts) == 2){
-                    $langpairs[$lang] = true;
-                }
-            }
-        }
-    }
-    return $langpairs;
-}
 
 ?>

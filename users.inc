@@ -39,7 +39,6 @@ function logged_in ( ) {
     global $ALLOW_NEW_USERS;
     global $USER_DB;
 
-    echo('<div class="rightalign"><a href="help.php">[help]</a>[login]</div></br><hr>');
     check_setup();    
     if (isset($_POST['reset'])){
         if ($_POST[email]){
@@ -86,6 +85,7 @@ function logged_in ( ) {
         }
     }
     elseif ($_GET['reset'] && $_GET['email']){
+        echo('<div class="rightalign"><a href="help.php">[help]</a>[login]</div></br><hr>');
         echo "Password reset requested: Change your password below!<br/><br/>";
         echo "<form action=\"$PHP_SELF\" method=\"post\"><table>";
         echo '<tr><td>username:</td><td><input type="user" value="'.$_GET['user'].'" name="user"></td></tr>';
@@ -97,7 +97,7 @@ function logged_in ( ) {
         return false;
     }
 
-
+    echo('<div class="rightalign"><a href="help.php">[help]</a>[login]</div></br><hr>');
     echo "<br /><br /><h2>Login</h2>";
 
     if ($ALLOW_NEW_USERS){

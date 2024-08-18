@@ -1,5 +1,10 @@
 
 
+# TODO's
+
+* show average rating per bitext (maybe also corpus?)
+* allow to search for document names in corpora (relevant for OpenSubtitles etc)
+
 
 # SQLite
 

@@ -50,7 +50,7 @@ function bitext_browsing_links(){
 ///////////////////
 
 function bitext_display_options(){
-    global $showScores, $showLengthRatio, $showRatings, $showMyRatings, $tableStyle;
+    global $tableStyle;
 
     if ($tableStyle == 'vertical'){
         $query = make_query(['style' => 'horizontal']);
@@ -61,6 +61,12 @@ function bitext_display_options(){
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> vertical</a>');
     }
 
+    bitext_score_options();
+    bitext_rating_options();
+}
+
+function bitext_score_options(){
+    global $showScores, $showLengthRatio;
     if ($showScores){
         $query = make_query(['showScores' => 0]);
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide scores</a>');
@@ -77,47 +83,34 @@ function bitext_display_options(){
         $query = make_query(['showLengthRatio' => 1]);
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show length ratio</a>');
     }
-    if ($showRatings){
-        $query = make_query(['showRatings' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide user ratings</a>');
-    }
-    else{
-        $query = make_query(['showRatings' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show user ratings</a>');
-    }
-    if ($showMyRatings){
-        $query = make_query(['showMyRatings' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide my ratings</a>');
-    }
-    else{
-        $query = make_query(['showMyRatings' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show my ratings</a>');
-    }
 }
+
 
 ////////////////////
 // print bitext navigation bar
 ///////////////////
 
-function bitext_navigation($offset, $showMaxAlignments){
+function bitext_navigation($offset, $showMax, $showStart=1){
 
-    $lastentry = $offset + $showMaxAlignments;
+    $lastentry = $offset + $showMax;
 
     if ($offset){
-        $query = make_query(['offset' => 0]);
-        echo('<a id="prev" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">start</a>');
-        $previous = $offset - $showMaxAlignments;
+        if ($showStart){
+            $query = make_query(['offset' => 0]);
+            echo('<a id="prev" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">start</a> / ');
+        }
+        $previous = $offset - $showMax;
         if ($previous < 0){ $previous = 0; }
         $query = make_query(['offset' => $previous]);
-        echo(' / <a id="prev" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">prev</a>');
+        echo('<a id="prev" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">prev</a> / ');
     }
     else{
-        echo('start / <a id="prev">prev</a>');
+        if ($showStart) echo('start / ');
+        echo('<a id="prev">prev</a> / ');
         echo '<script>var x = document.getElementById("prev");x.style.visibility = "hidden";</script>';
     }
-    // echo(" / [$offset:$lastentry]");
     $query = make_query(['offset' => $lastentry]);
-    echo(' / <a id="next" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> next</a>');
+    echo('<a id="next" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> next</a>');
 
 }
 
@@ -204,17 +197,20 @@ function print_horizontal_bitext_table($results,
     global $langpair, $searchable, $showModified;
     
     echo('<table class="bitext">');
-    echo("<tr><th>IDs</th><th>".$fromDoc);
+    echo("<tr><th>IDs</th>");
     if ($searchable && ! $showModified){
+        echo("<th style='text-align: right;'>".$fromDoc);
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
     }
+    else echo("<th>".$fromDoc);
     echo("</th>");
     if ($showScores) echo('<th>score</th>');
     if ($showLengthRatio) echo('<th>ratio</th>');
-    echo("<th>".$toDoc);
     if ($searchable && ! $showModified){
+        echo("<th style='text-align: right;'>".$toDoc);
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
     }
+    else echo("<th>".$toDoc);
     echo("</th><th>IDs</th>");
     if ($showMyRatings) echo('<th>my ratings</th>');
     if ($showRatings) echo('<th>ratings</th>');

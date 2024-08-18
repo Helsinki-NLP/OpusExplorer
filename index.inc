@@ -70,6 +70,18 @@ function get_bitext_dbfile($langpair){
 
 
 
+function get_bitext($bitextID){
+    global $bitextDBH;
+
+    if ($bitextDBH){
+        $results = $bitextDBH->query("SELECT * FROM bitexts WHERE rowid=".$bitextID);
+        if ($results)
+            if ($row=$results->fetchArray(SQLITE3_ASSOC))
+                return $row;
+    }
+    return array('corpus' => '', 'version' => '', 'fromDoc' => '', 'toDoc' => '');
+}
+
 
 function get_bitextid($corpus, $version, $fromDoc, $toDoc){
     global $algDBH;

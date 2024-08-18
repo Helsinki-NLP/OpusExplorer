@@ -150,18 +150,21 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
         search_navigation($searchquery, $offset, $limit);
         search_display_options($searchquery);
         $shown=0;
-        echo("<table class='bitext'>\n");
-        echo("<tr><th>link ID");
-        
-        // order by link ID is only allowed if we don't query for specific sentences
-        // --> this becomes super slow otherwise
-        if (! $searchquery ){
+        echo("<table class='bitext'>\n<tr>\n");
+
+        // show either bitext ID (if we search)
+        // or link ID (if we browse, can be sorted)
+        if ($searchquery){
+            echo("<th>bitext ID</th>");
+        }
+        else{
+            echo("<th>link ID");
             $query = make_query(['sortLinkIDs' => (! $orderByLinkID)]);
             $sortlabel = $orderByLinkID ? '&#x29BB;' : '⇓';
+            echo(' <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$sortlabel.'</a></th>');
         }
-        
-        echo(' <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$sortlabel.'</a>');
-        echo("</th><th style='text-align: right;'>source language");
+
+        echo("<th style='text-align: right;'>source language");
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $srcquery, 1, 0);
         echo("</th>");
         if ($showScores) echo('<th>score</th>');
@@ -208,7 +211,26 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
             
             echo("<tr>\n");
             echo("<td class='centeralign'>");
-            echo($linkID);
+            if ($searchquery){
+                if (! ($corpus && $version && $fromDoc && $toDoc) ){
+                    $bitext = get_bitext($bitextID);
+                    $query = make_query(['corpus' => $bitext['corpus'],
+                                         'version' => $bitext['version'],
+                                         'fromDoc' => $bitext['fromDoc'],
+                                         'toDoc' => $bitext['toDoc'],
+                                         'bitextID' => $bitextID,
+                                         'search' => '', 'offset' => 0]);
+                    $hreftitle = implode('/',[$bitext['corpus'],$bitext['version'],$bitext['fromDoc']]);
+                }
+                else{
+                    $query = make_query(['bitextID' => $bitextID, 'search' => '', 'offset' => 0]);
+                    $hreftitle = implode('/',[$corpus,$version,$fromDoc]);
+                }
+                echo('<a title="'.$hreftitle.'" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">');
+                echo($bitextID);
+                echo('</a>');
+            }
+            else echo($linkID);
             echo("</td>\n<td class='rightalign'>");
             echo($srcText);
             echo("</td>\n");
