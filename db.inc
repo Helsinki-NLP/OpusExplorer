@@ -144,68 +144,112 @@ function get_alignments($algDBH, $corpus, $version, $fromDoc, $toDoc,
 
 
 
+// fetch internal sentence IDs from link DB
+
+function fetch_linked_sentence_ids($linksDBH,$linkID){
+    
+    // echo("SELECT sentID FROM linkedsource WHERE linkID=$linkID\n");
+    $results = $linksDBH->query("SELECT sentID FROM linkedsource WHERE linkID=$linkID ORDER BY rowid");
+    $srcIDs = array();
+    if ($results){
+        while ($row = $results->fetchArray(SQLITE3_NUM)) {
+            array_push($srcIDs,$row[0]);
+        }
+    }
+    // echo("SELECT sentID FROM linkedtarget WHERE linkID=$linkID");
+    $results = $linksDBH->query("SELECT sentID FROM linkedtarget WHERE linkID=$linkID ORDER BY rowid");
+    $trgIDs = array();
+    if ($results){
+        while ($row = $results->fetchArray(SQLITE3_NUM)) {
+            array_push($trgIDs,$row[0]);
+        }
+    }
+    return array($srcIDs,$trgIDs);
+}
+
+// fetch a specific sentence from sentence DB
+
+function fetch_sentence($SentDBH, $id){
+    if ($id){
+        // echo("SELECT sentence FROM sentences WHERE rowid='$id'");
+        $results = $SentDBH->query("SELECT sentence FROM sentences WHERE rowid='$id'");
+        if ($results){
+            while ($row = $results->fetchArray(SQLITE3_NUM)) {
+                return $row[0];
+            }
+        }
+    }
+    return 'SENTENCE NOT FOUND';
+}
+
+
+
+
+
+
+
 // get sentences that are aligned to each other for a given link
 // --> use sentence index files if they exist
 // --> otherwise use link index (internal sentence IDs mapped to LinkIDs)
 
 function get_linked_sentences($linkID, $srcIDs, $trgIDs,
-                              $corpus='', $version='', $fromDoc='', $toDoc='',
+                              $corpus='', $version='',
+                              $fromDoc='', $toDoc='',
                               $fromDocID=0, $toDocID=0){
-    global $linkDbFile;
+    
     global $srcDBH, $trgDBH;
-    global $srcIdxDBH, $trgIdxDBH;
 
+    list($srcSentIDs,$trgSentIDs) = get_linked_sentences_ids($linkID, $srcIDs, $trgIDs,
+                                                             $corpus, $version,
+                                                             $fromDoc, $toDoc,
+                                                             $fromDocID, $toDocID);
     $srcSents = array();
     $trgSents = array();
     
-    if ($srcIdxDBH && $trgIdxDBH){
-        // echo("... use indexDB");
-        foreach ($srcIDs as $srcID){
-            array_push($srcSents,get_sentence($srcDBH, $srcIdxDBH, $corpus, $version, $fromDoc, $srcID, $fromDocID));
-        }
-        foreach ($trgIDs as $trgID){
-            array_push($trgSents,get_sentence($trgDBH, $trgIdxDBH, $corpus, $version, $toDoc, $trgID, $toDocID));
-        }
-    }
-    elseif ($linkDbFile){
-        // echo("... use linkDB");
-        $linksDBH = new SQLite3($linkDbFile,SQLITE3_OPEN_READONLY);
-        list($srcSentIDs,$trgSentIDs) = get_linked_sentence_ids($linksDBH, $linkID);        
-        foreach ($srcSentIDs as $id){
-            array_push($srcSents, fetch_sentence($srcDBH, $id));
-        }
-        foreach ($trgSentIDs as $id){
-            array_push($trgSents, fetch_sentence($trgDBH, $id));
-        }
-    }
+    foreach ($srcSentIDs as $id) array_push($srcSents, fetch_sentence($srcDBH, $id));
+    foreach ($trgSentIDs as $id) array_push($trgSents, fetch_sentence($trgDBH, $id));
+
     return array($srcSents, $trgSents);
 }
 
 
+function get_linked_sentences_ids($linkID, $srcIDs, $trgIDs,
+                                  $corpus='', $version='',
+                                  $fromDoc='', $toDoc='',
+                                  $fromDocID=0, $toDocID=0){
+    global $linkDbFile;
+    global $srcDBH, $trgDBH;
+    global $srcIdxDBH, $trgIdxDBH;
 
-function get_linked_source_sentences($linkID, $sentIDs, $corpus, $version, $doc, $docID){
-    global $srcDBH, $srcIdxDBH;
+    $srcSentIDs = array();
+    $trgSentIDs = array();
     
-    $sents = array();
-    foreach ($sentIDs as $sentID){
-        array_push($sents,get_sentence($srcDBH, $srcIdxDBH, $corpus, $version, $doc, $sentID, $docID));
+    if ($srcIdxDBH && $trgIdxDBH){
+        foreach ($srcIDs as $srcID){
+            array_push($srcSentIDs,get_sentence_id($srcIdxDBH, $corpus, $version, $fromDoc, $srcID, $fromDocID));
+        }
+        foreach ($trgIDs as $trgID){
+            array_push($trgSentIDs,get_sentence_id($trgIdxDBH, $corpus, $version, $toDoc, $trgID, $toDocID));
+        }
+        return array($srcSentIDs, $trgSentIDs);
     }
-    return $sents;
+    elseif ($linkDbFile){
+        $linksDBH = new SQLite3($linkDbFile,SQLITE3_OPEN_READONLY);
+        return fetch_linked_sentence_ids($linksDBH, $linkID);        
+    }
+    return array($srcSentIDs, $trgSentIDs);
 }
 
-function get_linked_target_sentences($linkID, $sentIDs, $corpus, $version, $doc, $docID){
-    global $trgDBH, $trgIdxDBH;
-
-    $sents = array();
-    foreach ($sentIDs as $sentID){
-        array_push($sents,get_sentence($trgDBH, $trgIdxDBH, $corpus, $version, $doc, $sentID, $docID));
-    }
-    return $sents;
-}
 
 
 
-function get_sentence_id($SentDBH, $IdxDBH, $corpus, $version, $document, $sentID, $docID=0){
+
+
+// get the internal sentence ID from the OPUS sentence ID
+// - use sentids table if docID is given
+// - use sentindex view otherwise (with corpus, version, document names from OPUS)
+
+function get_sentence_id($IdxDBH, $corpus, $version, $document, $sentID, $docID=0){
     if ($docID){
         $results = $IdxDBH->query("SELECT id FROM sentids WHERE docID=$docID AND sentID='$sentID'");
         if ($results){
@@ -225,18 +269,15 @@ function get_sentence_id($SentDBH, $IdxDBH, $corpus, $version, $document, $sentI
     return 0;
 }
 
+
+// get a sentence from the index using the OPUS sentence ID
+// - retrieve the internal sentence ID from the function above
+// - fetch the sentence from the DB
+
 function get_sentence($SentDBH, $IdxDBH, $corpus, $version, $document, $sentID, $docID=0){
     if (!$sentID) return '';
-    $id = get_sentence_id($SentDBH, $IdxDBH, $corpus, $version, $document, $sentID, $docID);
-    if ($id){
-        $results = $SentDBH->query("SELECT sentence FROM sentences WHERE rowid='$id'");
-        if ($results){
-            while ($row = $results->fetchArray(SQLITE3_NUM)) {
-                return $row[0];
-            }
-        }
-    }
-    return 'SENTENCE NOT FOUND';
+    $id = get_sentence_id($IdxDBH, $corpus, $version, $document, $sentID, $docID);
+    return fetch_sentence($SentDBH, $id);
 }
 
 
@@ -279,11 +320,12 @@ function get_target_document_id($corpus, $version, $document){
 
 function set_link_db($bitextID){
     global $DB_DIR, $langpair;
-    global $algDbFile, $algStarsDbFile, $algDBH;
+    global $linkDbFile, $algDbFile, $algStarsDbFile, $algDBH;
     global $modifiedBitextExists, $modifiedBitext;
     global $showModified, $tableStyle;
     
     $USER_DB_DIR = $DB_DIR.$_SESSION['user'].'/';
+    $userLinkDbFile = $USER_DB_DIR.$langpair.'.linked.db';
     $userAlgDbFile = $USER_DB_DIR.$langpair.'.db';
     $userAlgStarsDbFile = $USER_DB_DIR.$langpair.'.stars.db';
 
@@ -300,6 +342,9 @@ function set_link_db($bitextID){
                         $algDBH = $userAlgDBH;
                         $algStarsDbFile = $userAlgStarsDbFile;
                         $modifiedBitext = true;
+                        if (file_exists($userLinkDbFile) ){
+                            $linkDbFile = $userLinkDbFile;
+                        }
                     }
                 }
             }
@@ -308,6 +353,72 @@ function set_link_db($bitextID){
 }
 
 
+
+// create a copy of the bitext in the link database
+
+function initialize_user_linked_db($bitextID){
+    global $DB_DIR, $langpair, $linkDbFile;
+    global $modifiedBitextExists, $modifiedBitext;
+    
+    // return empty string if the link DB does not exist
+    // TODO: should we create it from the alignment DB?
+    // PROBLEM: that is quite expensive especially for large documents!
+    if (!$linkDbFile) return '';
+    
+    $USER_DB_DIR = $DB_DIR.$_SESSION['user'].'/';
+    if (! is_dir($USER_DB_DIR)) mkdir($USER_DB_DIR);
+
+    $userLinkDbFile = $USER_DB_DIR.$langpair.'.linked.db';
+
+    if (! file_exists($userLinkDbFile) ){
+        $userLinkDBH = new SQLite3($userLinkDbFile);
+        $userLinkDBH->exec('CREATE TABLE IF NOT EXISTS linkedsource ( sentID INTEGER, linkID INTEGER, bitextID INTEGER, PRIMARY KEY(linkID,sentID) )');
+        $userLinkDBH->exec('CREATE TABLE IF NOT EXISTS linkedtarget ( sentID INTEGER, linkID INTEGER, bitextID INTEGER, PRIMARY KEY(linkID,sentID) )');
+        $userLinkDBH->exec('CREATE INDEX IF NOT EXISTS idx_linkedsource_bitext ON linkedsource (bitextID,sentID)');
+        $userLinkDBH->exec('CREATE INDEX IF NOT EXISTS idx_linkedtarget_bitext ON linkedtarget (bitextID,sentID)');
+        $userLinkDBH->exec('CREATE INDEX IF NOT EXISTS idx_linkedsource_linkid ON linkedsource (linkID)');
+        $userLinkDBH->exec('CREATE INDEX IF NOT EXISTS idx_linkedtarget_linkid ON linkedtarget (linkID)');
+        $userLinkDBH->exec('CREATE INDEX IF NOT EXISTS idx_linkedsource_sentid ON linkedsource (sentID)');
+        $userLinkDBH->exec('CREATE INDEX IF NOT EXISTS idx_linkedtarget_sentid ON linkedtarget (sentID)');
+        $userLinkDBH->exec('PRAGMA journal_mode=WAL');
+        
+        $userLinkDBH->exec("ATTACH DATABASE '".$linkDbFile."' AS org");
+        $userLinkDBH->exec("INSERT OR IGNORE INTO linkedsource 
+                                   SELECT * FROM org.linkedsource WHERE bitextID=$bitextID ORDER BY rowid");
+        $userLinkDBH->exec("INSERT OR IGNORE INTO linkedtarget 
+                                   SELECT * FROM org.linkedtarget WHERE bitextID=$bitextID ORDER BY rowid");
+        $userLinkDBH->close();
+    }
+    else{
+        $userLinkDBH = new SQLite3($userLinkDbFile);
+        $resultsSrc = $userLinkDBH->query("SELECT COUNT(*) FROM linkedsource WHERE bitextID=$bitextID");
+        $resultsTrg = $userLinkDBH->query("SELECT COUNT(*) FROM linkedtarget WHERE bitextID=$bitextID");
+        if ($resultsSrc && $resultsTrg){
+            $rowSrc = $resultsSrc->fetchArray(SQLITE3_NUM);
+            $rowTrg = $resultsTrg->fetchArray(SQLITE3_NUM);
+            if (! $rowSrc[0]  && ! $rowTrg[0]){
+                $userLinkDBH->exec("ATTACH DATABASE '".$linkDbFile."' AS org");
+                $userLinkDBH->exec("INSERT OR IGNORE INTO linkedsource 
+                                           SELECT * FROM org.linkedsource WHERE bitextID=$bitextID ORDER BY rowid");
+                $userLinkDBH->exec("INSERT OR IGNORE INTO linkedtarget 
+                                           SELECT * FROM org.linkedtarget WHERE bitextID=$bitextID ORDER BY rowid");
+            }
+        }
+        $userLinkDBH->close();
+    }
+
+    $linkDbFile = $userLinkDbFile;
+
+    $modifiedBitext = true;
+    $modifiedBitextExists = true;
+
+    return $linkDbFile;
+}
+
+
+
+// create a copy of the bitext in the alignment database
+// create a user-specific DB for alignment ratings
 
 function initialize_user_link_db($bitextID){
     global $DB_DIR, $langpair, $algDBH, $algStarsDbFile;
@@ -388,8 +499,8 @@ function delete_srcid_from_link($DBH, $linkID, $sentID){
     $results = $DBH->query("SELECT * FROM links WHERE rowid=$linkID");
     if ($results){
         if ($row = $results->fetchArray(SQLITE3_NUM)){
-            $oldLinkSrc = $row[1];
-            $oldLinkTrg = $row[2];
+            $oldLinkSrc = trim($row[1]);
+            $oldLinkTrg = trim($row[2]);
             $oldLinkIDs = explode(' ',$oldLinkSrc);
             $newLinkIDs = array_diff($oldLinkIDs, array($sentID));
             $newLink = implode(' ',$newLinkIDs);
@@ -411,8 +522,8 @@ function delete_trgid_from_link($DBH, $linkID, $sentID){
     $results = $DBH->query("SELECT * FROM links WHERE rowid=$linkID");
     if ($results){
         if ($row = $results->fetchArray(SQLITE3_NUM)){
-            $oldLinkSrc = $row[1];
-            $oldLinkTrg = $row[2];
+            $oldLinkSrc = trim($row[1]);
+            $oldLinkTrg = trim($row[2]);
             $oldLinkIDs = explode(' ',$oldLinkTrg);
             $newLinkIDs = array_diff($oldLinkIDs, array($sentID));
             $newLink = implode(' ',$newLinkIDs);
@@ -433,8 +544,8 @@ function add_srcid_to_link($DBH, $bitextID, $linkID, $sentID, $front){
     $results = $DBH->query("SELECT * FROM links WHERE rowid=$linkID");
     if ($results){
         if ($row = $results->fetchArray(SQLITE3_NUM)){
-            $newLinkSrc = $row[1];
-            $newLinkTrg = $row[2];
+            $newLinkSrc = trim($row[1]);
+            $newLinkTrg = trim($row[2]);
             
             $newLinkIDs = explode(' ',$newLinkSrc);
             if ($front)
@@ -458,8 +569,8 @@ function add_trgid_to_link($DBH, $bitextID, $linkID, $sentID, $front){
     $results = $DBH->query("SELECT * FROM links WHERE rowid=$linkID");
     if ($results){
         if ($row = $results->fetchArray(SQLITE3_NUM)){
-            $newLinkSrc = $row[1];
-            $newLinkTrg = $row[2];
+            $newLinkSrc = trim($row[1]);
+            $newLinkTrg = trim($row[2]);
             
             $newLinkIDs = explode(' ',$newLinkTrg);
             if ($front)
@@ -480,22 +591,46 @@ function add_trgid_to_link($DBH, $bitextID, $linkID, $sentID, $front){
 
 
 
+// change links in link DB
+// NOTE: this needs to correspond to internal sentence IDs (not OPUS sentence IDs)
 
-function change_link($DBH, $bitextID, $oldLinkID){
+function change_source_link($linkDbFile,$sentID,$oldLinkID,$newLinkID){
+    if ($linkDbFile){
+        $DBH = new SQLite3($linkDbFile);
+        // echo("UPDATE OR IGNORE linkedsource SET linkID=$newLinkID WHERE linkID=$oldLinkID AND sentID=$sentID");
+        $DBH->exec("UPDATE OR IGNORE linkedsource SET linkID=$newLinkID WHERE linkID=$oldLinkID AND sentID=$sentID");
+        $DBH->close();
+    }
+}
+
+function change_target_link($linkDbFile,$sentID,$oldLinkID,$newLinkID){
+    if ($linkDbFile){
+        $DBH = new SQLite3($linkDbFile);
+        // echo("UPDATE OR IGNORE linkedtarget SET linkID=$newLinkID WHERE linkID=$oldLinkID AND sentID=$sentID");
+        $DBH->exec("UPDATE OR IGNORE linkedtarget SET linkID=$newLinkID WHERE linkID=$oldLinkID AND sentID=$sentID");
+        $DBH->close();
+    }
+}
+
+
+function change_link($DBH, $linkDbFile, $bitextID, $oldLinkID){
 
     if (isset($_GET['del-src'])){
         delete_srcid_from_link($DBH, $oldLinkID, $_GET['del-src']);
         delete_alignment_rating($oldLinkID);
+        change_source_link($linkDbFile,$_GET['del-srcid'],$oldLinkID,0);
     }
     elseif (isset($_GET['del-trg'])){
         delete_trgid_from_link($DBH, $oldLinkID, $_GET['del-trg']);
         delete_alignment_rating($oldLinkID);
+        change_target_link($linkDbFile,$_GET['del-trgid'],$oldLinkID,0);
     }
     elseif (isset($_GET['move-src'])){
         $newLinkID = $_GET['to'];
         $front = ($newLinkID > $oldLinkID);
         delete_srcid_from_link($DBH, $oldLinkID, $_GET['move-src']);
         add_srcid_to_link($DBH, $bitextID, $newLinkID, $_GET['move-src'],$front);
+        change_source_link($linkDbFile,$_GET['move-srcid'],$oldLinkID,$newLinkID);
         delete_alignment_rating($oldLinkID);
         delete_alignment_rating($newLinkID);
     }
@@ -504,6 +639,7 @@ function change_link($DBH, $bitextID, $oldLinkID){
         $front = ($newLinkID > $oldLinkID);
         delete_trgid_from_link($DBH, $oldLinkID, $_GET['move-trg']);
         add_trgid_to_link($DBH, $bitextID, $newLinkID, $_GET['move-trg'],$front);
+        change_target_link($linkDbFile,$_GET['move-trgid'],$oldLinkID,$newLinkID);
         delete_alignment_rating($oldLinkID);
         delete_alignment_rating($newLinkID);
     }    
