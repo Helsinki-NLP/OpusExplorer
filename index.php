@@ -27,9 +27,9 @@ if (isset($_GET['logout'])){
 include('env.inc');
 include('users.inc');
 include('opus.inc');
+include('db.inc');
 include('bitexts.inc');
 include('ratings.inc');
-include('index.inc');
 include('search.inc');
 
 
@@ -64,7 +64,17 @@ $showMaxAlignments = get_param('showMaxAlignments',$SHOW_ALIGNMENTS_LIMIT);
 $showMaxDocuments = get_param('showMaxDocuments',$DOCUMENT_LIST_LIMIT);
 
 $tableStyle = get_param('style','horizontal');
+
+
+## special permissions for document-level corpora (sentences in context):
+## - allow to edit alignments
+## - allow to sort by link ID
+## - allow to search for other alignment types (expensive search for large doc's!)
+
 $allowEdit = in_array($corpus, $ALLOW_EDIT);
+$allowOtherAlignTypes = in_array($corpus, $ALLOW_EDIT);
+$allowSortLinks = in_array($corpus, $ALLOW_EDIT);
+
 
 $modifiedBitextExists = false;
 $modifiedBitext = false;
@@ -98,9 +108,19 @@ if ($srclang && $trglang){
     if ($trgIdxDbFile) $trgIdxDBH = new SQLite3($trgIdxDbFile,SQLITE3_OPEN_READONLY);
     if ($algDbFile)    $algDBH    = new SQLite3($algDbFile,SQLITE3_OPEN_READONLY);
     if ($bitextDbFile) $bitextDBH = new SQLite3($bitextDbFile,SQLITE3_OPEN_READONLY);
+    // if ($linkDbFile)   $linksDBH  = new SQLite3($linkDbFile,SQLITE3_OPEN_READONLY);
 
     $browsable = ( $srcDbFile && $trgDbFile && $algDbFile && ( ($srcIdxDbFile && $trgIdxDbFile) || $linkDbFile ) );
     $searchable = ( $srcFtsFile && $trgFtsFile && $linkDbFile );
+
+    // currently: do not allow to edit alignments
+    // if the sentence index DBs are not available
+    // TODO: fix this to also create user-specific link-DBs (*.linked.db)
+    /*
+    if (! ($srcIdxDbFile && $trgIdxDbFile)){
+        $allowEdit = false;
+    }
+    */
 }
 
 if ($rating){

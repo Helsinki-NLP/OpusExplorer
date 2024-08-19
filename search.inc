@@ -96,6 +96,7 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
     global $showScores, $showLengthRatio, $showRatings, $showMyRatings;
     global $linkDbFile, $srcFtsFile, $trgFtsFile;
     global $fromDoc, $toDoc;
+    global $allowSortLinks;
 
     list($srclang,$trglang) = explode('-',$langpair);
 
@@ -159,9 +160,12 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
         }
         else{
             echo("<th>link ID");
-            $query = make_query(['sortLinkIDs' => (! $orderByLinkID)]);
-            $sortlabel = $orderByLinkID ? '&#x29BB;' : '⇓';
-            echo(' <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$sortlabel.'</a></th>');
+            if ($allowSortLinks){
+                $query = make_query(['sortLinkIDs' => (! $orderByLinkID)]);
+                $sortlabel = $orderByLinkID ? '&#x29BB;' : '⇓';
+                echo(' <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$sortlabel.'</a>');
+            }
+            echo("</th>");
         }
 
         echo("<th style='text-align: right;'>source language");
@@ -184,7 +188,7 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
 
             // echo("get linked sentences\n");
             $start = microtime(true);
-            list($srcIDs,$trgIDs) = get_linked_sentence_ids($linksDBH, $linkID);
+            list($srcIDs,$trgIDs) = fetch_linked_sentence_ids($linksDBH, $linkID);
             $fetchSentenceIdTime += microtime(true) - $start;
 
             $srcSents = array();
@@ -286,40 +290,6 @@ function search($searchquery, $searchside, $langpair, $corpus='', $version='', $
     }
 }
 
-
-function get_linked_sentence_ids($linksDBH, $linkID){
-    // echo("SELECT sentID FROM linkedsource WHERE linkID=$linkID\n");
-    $results = $linksDBH->query("SELECT sentID FROM linkedsource WHERE linkID=$linkID");
-    $srcIDs = array();
-    if ($results){
-        while ($row = $results->fetchArray(SQLITE3_NUM)) {
-            array_push($srcIDs,$row[0]);
-        }
-    }
-    // echo("SELECT sentID FROM linkedtarget WHERE linkID=$linkID");
-    $results = $linksDBH->query("SELECT sentID FROM linkedtarget WHERE linkID=$linkID");
-    $trgIDs = array();
-    if ($results){
-        while ($row = $results->fetchArray(SQLITE3_NUM)) {
-            array_push($trgIDs,$row[0]);
-        }
-    }
-    return array($srcIDs,$trgIDs);
-}
-
-
-function fetch_sentence($SentDBH, $id){
-    if ($id){
-        // echo("SELECT sentence FROM sentences WHERE rowid='$id'");
-        $results = $SentDBH->query("SELECT sentence FROM sentences WHERE rowid='$id'");
-        if ($results){
-            while ($row = $results->fetchArray(SQLITE3_NUM)) {
-                return $row[0];
-            }
-        }
-    }
-    return 'SENTENCE NOT FOUND';
-}
 
 
 

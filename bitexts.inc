@@ -4,7 +4,7 @@
 
 function bitext_browsing_links(){
     global $tableStyle, $modifiedBitextExists, $showModified, $allowEdit, $showEmpty;
-    global $ALIGN_TYPES;
+    global $ALIGN_TYPES, $allowOtherAlignTypes;
 
     if ($tableStyle == 'edit' && $allowEdit){
         $query = make_query(['style' => 'horizontal']);
@@ -30,8 +30,10 @@ function bitext_browsing_links(){
             $query = make_query(['aligntype' => $type, 'offset' => 0]);
             echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$type.'</a> / ');
         }
-        $query = make_query(['aligntype' => 'other', 'offset' => 0]);
-        echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">other</a> / ');
+        if ($allowOtherAlignTypes){
+            $query = make_query(['aligntype' => 'other', 'offset' => 0]);
+            echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">other</a> / ');
+        }
         if ($showEmpty){
             $query = make_query(['showEmpty' => 0]);
             echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">hide empty</a>');
@@ -144,8 +146,8 @@ function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocI
         $type = '';
         if (isset($_GET['changelink'])){
             $userAlgDBH = initialize_user_link_db($bitextID);
-            // echo("change link ".$_GET['changelink']);
-            change_link($userAlgDBH, $bitextID, $_GET['changelink']);
+            $userLinkDbFile = initialize_user_linked_db($bitextID);
+            change_link($userAlgDBH, $userLinkDbFile, $bitextID, $_GET['changelink']);
         }
     }
 
@@ -385,6 +387,7 @@ function print_editable_bitext_table($results,
                                      $showScores=1, $showLengthRatio=0,
                                      $showMyRatings=1, $showRatings=0){
 
+    global $srcDBH, $trgDBH;
     global $segmentFirstBgColor, $segmentFirstBorderColor;
     global $segmentOtherBgColor, $segmentOtherBorderColor;
 
@@ -412,9 +415,20 @@ function print_editable_bitext_table($results,
         $linkID = $row[3];
         $nextLinkID = $linkID+1;
 
-        list($srcSents, $trgSents) = get_linked_sentences($linkID, $srcIDs, $trgIDs,
-                                                          $corpus, $version, $fromDoc, $toDoc,
-                                                          $fromDocID, $toDocID);        
+        list($srcSentIDs,$trgSentIDs) = get_linked_sentences_ids($linkID, $srcIDs, $trgIDs,
+                                                                 $corpus, $version,
+                                                                 $fromDoc, $toDoc,
+                                                                 $fromDocID, $toDocID);
+
+        $srcSents = array();
+        $trgSents = array();
+    
+        foreach ($srcSentIDs as $id) array_push($srcSents, fetch_sentence($srcDBH, $id));
+        foreach ($trgSentIDs as $id) array_push($trgSents, fetch_sentence($trgDBH, $id));
+
+        //        list($srcSents, $trgSents) = get_linked_sentences($linkID, $srcIDs, $trgIDs,
+        //                                                $corpus, $version, $fromDoc, $toDoc,
+        //                                                $fromDocID, $toDocID);        
         
         $srcText = implode(' ',$srcSents);
         $trgText = implode(' ',$trgSents);
@@ -439,7 +453,7 @@ function print_editable_bitext_table($results,
             echo("<td class='segment-move'>");
             if ($srcIDs[$x]){
                 echo($srcIDs[$x]);
-                $query = make_query(['changelink' => $linkID, 'del-src' => $srcIDs[$x]]);
+                $query = make_query(['changelink' => $linkID, 'del-src' => $srcIDs[$x], 'del-srcid' => $srcSentIDs[$x]]);
                 echo("</td><td class='segment-move' onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                                   onMouseOut=\"setStyle(this,'backgroundColor','white')\"
                                   onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x1f5d1;");
@@ -450,14 +464,14 @@ function print_editable_bitext_table($results,
             echo("</td>");
             
             if ($x == 0 && $prevLinkID && $srcIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-src' => $srcIDs[$x], 'to' => $prevLinkID]);
+                $query = make_query(['changelink' => $linkID, 'move-src' => $srcIDs[$x], 'move-srcid' => $srcSentIDs[$x], 'to' => $prevLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentFirstBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
                           onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇑</td>");
             }
             elseif ($x == count($srcIDs)-1 && $srcIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-src' => $srcIDs[$x], 'to' => $nextLinkID]);
+                $query = make_query(['changelink' => $linkID, 'move-src' => $srcIDs[$x], 'move-srcid' => $srcSentIDs[$x], 'to' => $nextLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
@@ -472,14 +486,14 @@ function print_editable_bitext_table($results,
             echo("</td>");
 
             if ($x == count($srcIDs)-1 && $srcIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-src' => $srcIDs[$x], 'to' => $nextLinkID]);
+                $query = make_query(['changelink' => $linkID, 'move-src' => $srcIDs[$x], 'move-srcid' => $srcSentIDs[$x], 'to' => $nextLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
                           onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇓</td>");
             }
             elseif ($x == 0 && $prevLinkID && $srcIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-src' => $srcIDs[$x], 'to' => $prevLinkID]);
+                $query = make_query(['changelink' => $linkID, 'move-src' => $srcIDs[$x], 'move-srcid' => $srcSentIDs[$x], 'to' => $prevLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentFirstBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
@@ -522,14 +536,14 @@ function print_editable_bitext_table($results,
             echo("<tr>");
             
             if ($x == count($trgIDs)-1 && $trgIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-trg' => $trgIDs[$x], 'to' => $nextLinkID]);
+                $query = make_query(['changelink' => $linkID, 'move-trg' => $trgIDs[$x], 'move-trgid' => $trgSentIDs[$x], 'to' => $nextLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
                           onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇓</td>");
             }
             elseif ($x == 0 && $prevLinkID && $trgIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-trg' => $trgIDs[$x], 'to' => $prevLinkID]);
+                $query = make_query(['changelink' => $linkID, 'move-trg' => $trgIDs[$x], 'move-trgid' => $trgSentIDs[$x], 'to' => $prevLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentFirstBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
@@ -544,14 +558,14 @@ function print_editable_bitext_table($results,
             echo("</td>");
 
             if ($x == 0 && $prevLinkID && $trgIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-trg' => $trgIDs[$x], 'to' => $prevLinkID]);
+                $query = make_query(['changelink' => $linkID, 'move-trg' => $trgIDs[$x], 'move-trgid' => $trgSentIDs[$x], 'to' => $prevLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentFirstBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
                           onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇑</td>");
             }
             elseif ($x == count($trgIDs)-1 && $trgIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-trg' => $trgIDs[$x], 'to' => $nextLinkID]);
+                $query = make_query(['changelink' => $linkID, 'move-trg' => $trgIDs[$x], 'move-trgid' => $trgSentIDs[$x], 'to' => $nextLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
@@ -563,7 +577,7 @@ function print_editable_bitext_table($results,
             
             // echo("<td class='segment-id'>");
             if ($trgIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'del-trg' => $trgIDs[$x]]);
+                $query = make_query(['changelink' => $linkID, 'del-trg' => $trgIDs[$x], 'del-trgid' => $trgSentIDs[$x]]);
                 echo("<td class='segment-move' onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                             onMouseOut=\"setStyle(this,'backgroundColor','white')\"
                             onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x1f5d1;");

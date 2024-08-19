@@ -2,8 +2,12 @@
 
 # TODO's
 
-* show average rating per bitext (maybe also corpus?)
-* allow to search for document names in corpora (relevant for OpenSubtitles etc)
+* bugfix in link DB: (linkID,sentID) does not have to be unique
+* enable monolingual search
+* show cleanerScores (but right now there are no scores in the DB)
+* enable editing without sentence index DBs (*.ids.db) - requires to create and update user-specific *linked.db files!
+* show average rating per bitext (maybe also corpus?) - DONE (except for corpora)
+* allow to search for document names in corpora (relevant for OpenSubtitles etc) - DONE
 
 
 # SQLite

@@ -90,7 +90,6 @@ function get_bitext_rating($bitextID,$user=''){
         if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
         $condition .= " AND user='".$user."'";
     }
-    // echo("SELECT AVG(rating) FROM ratings WHERE ".$condition);
     $results = $DBH->query("SELECT AVG(rating) FROM ratings WHERE ".$condition);
     if ($results){
         while ($row = $results->fetchArray(SQLITE3_NUM)) {
