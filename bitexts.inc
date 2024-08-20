@@ -2,7 +2,7 @@
 
 
 
-function bitext_browsing_links(){
+function bitext_browsing_links($selectedAlignType=''){
     global $tableStyle, $modifiedBitextExists, $showModified, $allowEdit, $showEmpty;
     global $ALIGN_TYPES, $allowOtherAlignTypes;
 
@@ -27,12 +27,18 @@ function bitext_browsing_links(){
         }
         
         foreach ($ALIGN_TYPES as $type){
-            $query = make_query(['aligntype' => $type, 'offset' => 0]);
-            echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$type.'</a> / ');
+            if ($selectedAlignType != $type){
+                $query = make_query(['aligntype' => $type, 'offset' => 0]);
+                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$type.'</a> / ');
+            }
+            else echo($type.' / ');
         }
         if ($allowOtherAlignTypes){
-            $query = make_query(['aligntype' => 'other', 'offset' => 0]);
-            echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">other</a> / ');
+            if ($selectedAlignType != 'other'){
+                $query = make_query(['aligntype' => 'other', 'offset' => 0]);
+                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">other</a> / ');
+            }
+            else echo('other / ');
         }
         if ($showEmpty){
             $query = make_query(['showEmpty' => 0]);
@@ -200,7 +206,7 @@ function print_horizontal_bitext_table($results,
     
     echo('<table class="bitext">');
     echo("<tr><th>IDs</th>");
-    if ($searchable && ! $showModified){
+    if ($searchable){
         echo("<th style='text-align: right;'>".$fromDoc);
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
     }
@@ -208,7 +214,7 @@ function print_horizontal_bitext_table($results,
     echo("</th>");
     if ($showScores) echo('<th>score</th>');
     if ($showLengthRatio) echo('<th>ratio</th>');
-    if ($searchable && ! $showModified){
+    if ($searchable){
         echo("<th style='text-align: right;'>".$toDoc);
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
     }

@@ -46,14 +46,16 @@ $corpus = get_param('corpus');
 $version = get_param('version');
 $fromDoc = get_param('fromDoc');
 $toDoc = get_param('toDoc');
-$alignType = get_param('aligntype');
-$offset = get_param('offset',0);
 
 $bitextID  = get_param('bitextID');
 $fromDocID = get_param('fromDocID');
 $toDocID   = get_param('toDocID');
 
+$offset = get_param('offset',0);
+$alignType = get_param('aligntype');
 $showEmpty = get_param('showEmpty',0);
+if ($alignType == '0-1' || $alignType == '1-0') $showEmpty=1;
+
 $showScores = get_param('showScores',1);
 $showLengthRatio = get_param('showLengthRatio',0);
 $showRatings = get_param('showRatings',0);
@@ -149,8 +151,8 @@ if ($srclang && $trglang){
     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$langpair.'</a> / ');
     
     if ($corpus && $version){
-        $query = make_query(['fromDoc' => '', 'toDoc' => '', 'aligntype' => '',
-                             'search' => '', 'offset' => 0, 'sortLinkIDs' => 0, 'fromDocQuery' => '']);
+        $query = make_query(['fromDoc' => '', 'toDoc' => '', 'search' => '', 'fromDocQuery' => '']);
+
         echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.' / '.$version.'</a> / ');
         
         if ($fromDoc && $toDoc){
@@ -159,7 +161,7 @@ if ($srclang && $trglang){
             set_link_db($bitextID);
             $query = make_query(['aligntype' => '', 'offset' => 0, 'search' => '', 'sortLinkIDs' => 0, 'fromDocQuery' => '']);
             echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$fromDoc.'</a> / ');
-            if ($browsable && ! $searchquery) bitext_browsing_links();
+            if ($browsable && ! $searchquery) bitext_browsing_links($alignType);
         }
     }
     if (! $fromDoc || ! $toDoc){
