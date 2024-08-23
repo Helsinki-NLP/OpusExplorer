@@ -15,6 +15,7 @@ function print_document_list($corpus, $version, $offset=0, $fromDocQuery='', $to
     if ($offset){
         $limit .= " OFFSET $offset";
     }
+    // echo "SELECT DISTINCT fromDoc,toDoc,rowid FROM bitexts $condition $limit";
     $results = $bitextDBH->query("SELECT DISTINCT fromDoc,toDoc,rowid FROM bitexts $condition $limit");
     
     if ($results){

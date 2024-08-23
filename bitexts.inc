@@ -1,9 +1,150 @@
 <?php // -*-php-*-
 
 
+class bitext {
 
-function bitext_browsing_links($selectedAlignType=''){
-    global $tableStyle, $modifiedBitextExists, $showModified, $allowEdit, $showEmpty;
+    protected $index;
+    protected $user;
+    protected $bitextID;
+    protected $fromDocID;
+    protected $toDocID;
+    
+    public $corpus;
+    public $version;
+    public $langpair;
+    public $fromDoc;
+    public $toDoc;
+
+    function __construct($indexDir, $user, $corpus, $version, $langpair, $fromDoc, $toDoc, $showUserData=1) {
+        $this->corpus = $corpus;
+        $this->version = $version;
+        $this->langpair = $langpair;
+        $this->fromDoc = $fromDoc;
+        $this->toDoc = $toDoc;
+        $this->user = $user;
+
+        list($srclang,$trglang) = explode('-',$langpair);
+        $this->index = new opusindex($indexDir, $user, $srclang, $trglang, $corpus, $version, $fromDoc ,$toDoc);
+        $bitextID=$this->id();
+        if ($showUserData) $this->$userDataExists = $this->index->openUserDB($bitextID);
+    }
+            
+    public function id(){
+        if ($this->bitextID) return $this->bitextID;
+        if ($id = get_param('bitextID')){
+            $this->bitextID = $id;
+        }
+        else{
+            $this->bitextID = $this->index->getBitextID($this->corpus,
+                                                        $this->version,
+                                                        $this->fromDoc,
+                                                        $this->toDoc);
+            set_param('bitextID',$id);
+        }
+        return $this->bitextID;
+    }
+    public function fromDocID(){
+        if ($this->fromDocID) return $this->fromDocID;
+        if ($id = get_param('fromDocID')){
+            $this->fromDocID = $id;
+            set_param('fromDocID',$id);
+        }
+        return $this->fromDocID;
+    }    
+    public function toDocID(){
+        if ($this->toDocID) return $this->toDocID;
+        if ($id = get_param('toDocID')){
+            $this->toDocID = $id;
+            set_param('toDocID',$id);
+        }
+        return $this->toDocID;
+    }
+
+    public function alignments($type, $limit, $offset){
+        $alignments = new alignments($this, $this->index);
+        $alignments->fetch($type, $limit, $offset);
+        return $alignments;
+    }
+
+    public function userDataExists(){
+        return $this->index->userDataExists($this->id());
+    }
+
+    public function getMyAlignmentRating($linkID){
+        return $this->index->getAlignmentRating($this->id(),$linkID,$this->user);
+    }
+
+    public function getAverageAlignmentRating($linkID){
+        return $this->index->getAlignmentRating($this->id(),$linkID);
+    }
+
+}
+
+
+class alignments{
+    
+    public $bitext;
+    protected $index;
+    protected $searchResult;
+
+    function __construct($bitext,$index){
+        $this->bitext = $bitext;
+        $this->index = $index;        
+    }
+
+    public function fetch($type, $limit, $offset){
+        global $linksDBH;
+        $this->searchResults = $this->index->getAlignments($this->bitext->id(), $type, $offset);
+    }
+
+    public function nextLink(){
+        if ($this->searchResults){
+            return $this->searchResults->fetchArray(SQLITE3_ASSOC);
+        }
+        return false;
+    }
+
+    public function next(){
+        if ($this->searchResults){
+            if ($link = $this->searchResults->fetchArray(SQLITE3_ASSOC)){
+
+                if ($link['srcSentIDs'] || $link['trgSentIDs']){
+                    $link['srcSentIDs'] = $link['srcSentIDs'] ? explode(' ',$link['srcSentIDs']) : array();
+                    $link['trgSentIDs'] = $link['trgSentIDs'] ? explode(' ',$link['trgSentIDs']) : array();
+                        
+                }
+                else{
+                    list($link['srcSentIDs'],
+                         $link['trgSentIDs']) = get_linked_sentences_ids($link['linkID'],
+                                                                         $link['srcIDs'], $link['trgIDs'],
+                                                                         $bitext->corpus, $bitext->version,
+                                                                         $bitext->fromDoc, $bitext->toDoc,
+                                                                         $bitext->fromDocID(), $bitext->toDocID());
+                }
+
+                $link['srcIDs'] = $link['srcIDs'] ? explode(' ',$link['srcIDs']) : array();
+                $link['trgIDs'] = $link['trgIDs'] ? explode(' ',$link['trgIDs']) : array();
+                $link['srcSents'] = array();
+                $link['trgSents'] = array();
+
+                global $srcDBH,$trgDBH;
+                foreach ($link['srcSentIDs'] as $id)
+                    if ($id) array_push($link['srcSents'], fetch_sentence($srcDBH, $id));
+                foreach ($link['trgSentIDs'] as $id)
+                    if ($id) array_push($link['trgSents'], fetch_sentence($trgDBH, $id));
+                
+                return $link;
+            }
+        }
+        return false;
+    }
+
+}
+
+
+
+function bitext_browsing_links($bitext, $selectedAlignType=''){
+    global $tableStyle, $showModified, $allowEdit, $showEmpty;
     global $ALIGN_TYPES, $allowOtherAlignTypes;
 
     if ($tableStyle == 'edit' && $allowEdit){
@@ -11,7 +152,7 @@ function bitext_browsing_links($selectedAlignType=''){
         echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">stop editing</a> / ');
     }
     else{
-        if ($modifiedBitextExists){
+        if ($bitext->userDataExists()){
             if ($showModified){
                 $query = make_query(['showModified' => 0]);
                 echo('modified / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">original</a> / ');
@@ -122,68 +263,56 @@ function bitext_navigation($offset, $showMax, $showStart=1){
 
 }
 
-function bitext_rating($bitextID){
+function bitext_rating($bitext){
     global $showMyRatings, $showRatings;
     if ($showMyRatings){
         echo(" / rate the overall bitext quality: ");
-        print_rating_stars($bitextID,0);
+        // print_rating_stars($bitextID,0);
+        printRatingStars($bitext,0);
     }
     if ($showRatings){
         echo(" (");
-        print_average_ratings($bitextID,0);
+        // print_average_ratings($bitextID,0);
+        printAverageRatings($bitext,0);
         echo(")");
     }
 }
 
 
-function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocID=0, $bitextID=0, $type='', $offset=0){
-    global $srcDBH, $srcIdxDBH, $trgDBH, $trgIdxDBH, $algDBH;
+function print_bitext($bitext, $type='', $offset=0){
+    global $srcDBH, $srcIdxDBH, $trgDBH, $trgIdxDBH, $linksDBH;
     global $showMaxAlignments, $showScores, $showLengthRatio, $showRatings, $showMyRatings, $showEmpty;
     global $tableStyle, $allowEdit;
-
-    if (! $bitextID){
-        $bitextID = get_bitextid($corpus, $version, $fromDoc, $toDoc);
-        set_param('bitextID',$bitextID);
-        set_link_db($bitextID);
-    }
 
     if ($tableStyle == 'edit' && $allowEdit){
         $showEmpty = 1;
         $type = '';
         if (isset($_GET['changelink'])){
-            $userAlgDBH = initialize_user_link_db($bitextID);
-            $userLinkDbFile = initialize_user_linked_db($bitextID);
-            change_link($userAlgDBH, $userLinkDbFile, $bitextID, $_GET['changelink']);
+            $userLinkDbFile = initialize_user_link_db($bitextID);
+            change_link($userLinkDbFile, $bitextID, $_GET['changelink']);
         }
     }
 
-    $results = get_alignments($algDBH, $corpus, $version, $fromDoc, $toDoc,
-                              $fromDocID, $toDocID, $bitextID, $type, $offset);
+    $alignments = $bitext->alignments($type,$showMaxAlignments,$offset);
 
-    if ($results){
+    if ($alignments){
 
         bitext_navigation($offset, $showMaxAlignments);
         bitext_display_options();
-        bitext_rating($bitextID);
+        bitext_rating($bitext);
 
         if ($tableStyle == 'edit' && $allowEdit){
-            $shown = print_editable_bitext_table($results,
-                                                 $corpus, $version, $fromDoc, $toDoc,
-                                                 $fromDocID, $toDocID, $bitextID,
+            $shown = print_editable_bitext_table($alignments,
                                                  $showScores, $showLengthRatio,
                                                  $showMyRatings, $showRatings);
         }
         elseif ($tableStyle == 'vertical'){
-            $shown = print_vertical_bitext_table($results,
-                                                 $corpus, $version, $fromDoc, $toDoc,
-                                                 $fromDocID, $toDocID, $bitextID,
+            $shown = print_vertical_bitext_table($alignments,
                                                  $showScores, $showLengthRatio,
                                                  $showMyRatings, $showRatings);
         }
         else{
-            $shown = print_horizontal_bitext_table($results,
-                                                   $corpus, $version, $fromDoc, $toDoc,
-                                                   $fromDocID, $toDocID, $bitextID,
+            $shown = print_horizontal_bitext_table($alignments,
                                                    $showScores, $showLengthRatio,
                                                    $showMyRatings, $showRatings);
         }
@@ -196,11 +325,17 @@ function print_bitext($corpus, $version, $fromDoc, $toDoc, $fromDocID=0, $toDocI
 }
 
 
-function print_horizontal_bitext_table($results,
-                                       $corpus, $version, $fromDoc, $toDoc,
-                                       $fromDocID, $toDocID, $bitextID,
+function print_horizontal_bitext_table($alignments,
                                        $showScores=1, $showLengthRatio=0,
                                        $showMyRatings=1, $showRatings=0){
+
+    // TODO: should pass on bitext instance to functions instead of those variables
+    $bitext = $alignments->bitext;
+    $corpus = $bitext->corpus;
+    $version = $bitext->version;
+    $fromDoc = $bitext->fromDoc;
+    $toDoc = $bitext->toDoc;
+    $bitextID = $bitext->id();
 
     global $langpair, $searchable, $showModified;
     
@@ -224,24 +359,18 @@ function print_horizontal_bitext_table($results,
     if ($showRatings) echo('<th>ratings</th>');
     echo("</tr>");
     $i = 0;
-    while ($row = $results->fetchArray(SQLITE3_NUM)) {
+    while ($row = $alignments->next()) {
         $i++;
-        $srcIDs = explode(' ',$row[0]);
-        $trgIDs = explode(' ',$row[1]);
-        $linkID = $row[3];
 
-        list($srcSents, $trgSents) = get_linked_sentences($linkID, $srcIDs, $trgIDs,
-                                                          $corpus, $version, $fromDoc, $toDoc,
-                                                          $fromDocID, $toDocID);        
-        $srcText = implode(' ',$srcSents);
-        $trgText = implode(' ',$trgSents);
+        $srcText = implode(' ',$row['srcSents']);
+        $trgText = implode(' ',$row['trgSents']);
 
         echo('<tr><td class="centeralign">');
-        echo(implode('&nbsp;',$srcIDs).'</td><td class="rightalign">');
+        echo(implode('&nbsp;',$row['srcIDs']).'</td><td class="rightalign">');
         echo($srcText);
             
         if ($showScores){
-            $score = $row[2];
+            $score = $row['alignerScore'];
             $color = score_color($score);
             echo("</td><td bgcolor='$color' class='centeralign'>$score");
         }
@@ -259,18 +388,20 @@ function print_horizontal_bitext_table($results,
             
         echo('</td><td class="leftalign">');
         echo($trgText);
-        echo('</td><td class="centeralign">'.implode('&nbsp;',$trgIDs));
+        echo('</td><td class="centeralign">'.implode('&nbsp;',$row['trgIDs']));
 
         $textOK = ( strpos($srcText, 'SENTENCE NOT FOUND') === false &&
                     strpos($trgText, 'SENTENCE NOT FOUND') === false );
 
         if ($showMyRatings && $textOK){
             echo('</td><td class="centeralign">');
-            print_rating_stars($bitextID,$linkID);
+            // print_rating_stars($bitextID,$row['linkID']);
+            printRatingStars($bitext,$row['linkID']);
         }
         if ($showRatings && $textOK){
             echo('</td><td class="centeralign">');
-            print_average_ratings($bitextID,$linkID);
+            // print_average_ratings($bitextID,$row['linkID']);
+            printAverageRatings($bitext,$row['linkID']);
         }
             
         echo('</td></tr>'."\n");
@@ -280,11 +411,15 @@ function print_horizontal_bitext_table($results,
 }
 
 
-function print_vertical_bitext_table($results,
-                                     $corpus, $version, $fromDoc, $toDoc,
-                                     $fromDocID, $toDocID, $bitextID,
+function print_vertical_bitext_table($alignments,
                                      $showScores=1, $showLengthRatio=0,
                                      $showMyRatings=1, $showRatings=0){
+
+    $bitext = $alignments->bitext;
+    $fromDoc = $bitext->fromDoc;
+    $toDoc = $bitext->toDoc;
+    $bitextID = $bitext->id();
+
     
     echo('<table class="bitext">');
     
@@ -303,24 +438,18 @@ function print_vertical_bitext_table($results,
     echo("</tr>");
     
     $i = 0;
-    while ($row = $results->fetchArray(SQLITE3_NUM)) {
+    
+    while ($row = $alignments->next()) {
         $i++;
-        $srcIDs = explode(' ',$row[0]);
-        $trgIDs = explode(' ',$row[1]);
-        $linkID = $row[3];
-
-        list($srcSents, $trgSents) = get_linked_sentences($linkID, $srcIDs, $trgIDs,
-                                                          $corpus, $version, $fromDoc, $toDoc,
-                                                          $fromDocID, $toDocID);        
         
-        $srcText = implode(' ',$srcSents);
-        $trgText = implode(' ',$trgSents);
+        $srcText = implode(' ',$row['srcSents']);
+        $trgText = implode(' ',$row['trgSents']);
 
         $textOK = ( strpos($srcText, 'SENTENCE NOT FOUND') === false &&
                     strpos($trgText, 'SENTENCE NOT FOUND') === false );
 
         if ($showScores){
-            $score = $row[2];
+            $score = $row['alignerScore'];
             $scoreColor = score_color($score);
         }
         if ($showLengthRatio){
@@ -337,7 +466,7 @@ function print_vertical_bitext_table($results,
         // source language row
         
         echo('<tr class="bitextsrc"><td class="centeralign">');
-        echo(implode('&nbsp;',$srcIDs).'</td><td>');
+        echo(implode('&nbsp;',$row['srcIDs']).'</td><td>');
         echo($srcText);
 
         if ($showScores)
@@ -348,7 +477,8 @@ function print_vertical_bitext_table($results,
         if ($textOK){
             if ($showMyRatings){
                 echo('</td><td class="centeralign">');
-                print_rating_stars($bitextID,$linkID);
+                // print_rating_stars($bitextID,$row['linkID']);
+                printRatingStars($bitext,$row['linkID']);
             }
             elseif ($showRatings){
                 echo("</td><td>");
@@ -360,7 +490,7 @@ function print_vertical_bitext_table($results,
         // target language row
         
         echo('<tr class="bitexttrg"><td class="centeralign">');
-        echo(implode('&nbsp;',$trgIDs).'</td><td class="bitexttrg">');
+        echo(implode('&nbsp;',$row['trgIDs']).'</td><td class="bitexttrg">');
         echo($trgText);
 
         if ($showLengthRatio)
@@ -372,7 +502,8 @@ function print_vertical_bitext_table($results,
         if ($textOK){
             if ($showRatings){
                 echo('</td><td class="centeralign">');
-                print_average_ratings($bitextID,$linkID);
+                // print_average_ratings($bitextID,$row['linkID']);
+                printAverageRatings($bitext,$row['linkID']);
             }
             elseif ($showMyRatings){
                 echo("</td><td>");
@@ -387,15 +518,17 @@ function print_vertical_bitext_table($results,
 
 
 
-function print_editable_bitext_table($results,
-                                     $corpus, $version, $fromDoc, $toDoc,
-                                     $fromDocID, $toDocID, $bitextID,
+function print_editable_bitext_table($alignments,
                                      $showScores=1, $showLengthRatio=0,
                                      $showMyRatings=1, $showRatings=0){
 
-    global $srcDBH, $trgDBH;
     global $segmentFirstBgColor, $segmentFirstBorderColor;
     global $segmentOtherBgColor, $segmentOtherBorderColor;
+
+    $bitext = $alignments->bitext;
+    $fromDoc = $bitext->fromDoc;
+    $toDoc = $bitext->toDoc;
+    $bitextID = $bitext->id();
 
     $PHP_SELF=$_SERVER['PHP_SELF'];
 
@@ -414,70 +547,49 @@ function print_editable_bitext_table($results,
     $i = 0;
     $prevLinkID = 0;
                 
-    while ($row = $results->fetchArray(SQLITE3_NUM)) {
+    while ($row = $alignments->next()) {
         $i++;
-        $srcIDs = explode(' ',trim($row[0]));
-        $trgIDs = explode(' ',trim($row[1]));
-        $linkID = $row[3];
-        $nextLinkID = $linkID+1;
+        $nextLinkID = $row['linkID']+1;
 
-        list($srcSentIDs,$trgSentIDs) = get_linked_sentences_ids($linkID, $srcIDs, $trgIDs,
-                                                                 $corpus, $version,
-                                                                 $fromDoc, $toDoc,
-                                                                 $fromDocID, $toDocID);
-
-        $srcSents = array();
-        $trgSents = array();
-    
-        foreach ($srcSentIDs as $id) array_push($srcSents, fetch_sentence($srcDBH, $id));
-        foreach ($trgSentIDs as $id) array_push($trgSents, fetch_sentence($trgDBH, $id));
-
-        //        list($srcSents, $trgSents) = get_linked_sentences($linkID, $srcIDs, $trgIDs,
-        //                                                $corpus, $version, $fromDoc, $toDoc,
-        //                                                $fromDocID, $toDocID);        
-        
-        $srcText = implode(' ',$srcSents);
-        $trgText = implode(' ',$trgSents);
+        $srcText = implode(' ',$row['srcSents']);
+        $trgText = implode(' ',$row['trgSents']);
 
         $segmentBgColor = 'white';
         if (isset($_GET['changelink'])){
-            if ($linkID == $_GET['changelink']){
+            if ($row['linkID'] == $_GET['changelink']){
                 $segmentBgColor = $segmentOtherBgColor;
             }
-            elseif ($linkID == $_GET['to']){
+            elseif ($row['linkID'] == $_GET['to']){
                 $segmentBgColor = $segmentFirstBgColor;
             }
         }
 
         echo('<tr bgcolor="'.$segmentBgColor.'">');
         echo('<td class="bitext-src"><table class="segment">');
-        for ($x=0; $x<count($srcIDs);$x++){
-            array_push($srcAnchors,$srcIDs[$x]);
-            echo '<a name="src-'.$srcIDs[$x].'" />';
+        for ($x=0; $x<count($row['srcIDs']);$x++){
+            array_push($srcAnchors,$row['srcIDs'][$x]);
+            echo '<a name="src-'.$row['srcIDs'][$x].'" />';
             $anchor = (count($srcAnchors) > 4) ? '#src-'.$srcAnchors[count($srcAnchors)-4] : '';
             echo("<tr>");
             echo("<td class='segment-move'>");
-            if ($srcIDs[$x]){
-                echo($srcIDs[$x]);
-                $query = make_query(['changelink' => $linkID, 'del-src' => $srcIDs[$x], 'del-srcid' => $srcSentIDs[$x]]);
+            if ($row['srcIDs'][$x]){
+                echo($row['srcIDs'][$x]);
+                $query = make_query(['changelink' => $row['linkID'], 'del-src' => $row['srcIDs'][$x]]);
                 echo("</td><td class='segment-move' onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                                   onMouseOut=\"setStyle(this,'backgroundColor','white')\"
                                   onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x1f5d1;");
-#                echo("&nbsp;<span onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
-#                                  onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-#                                  onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x1f5d1;</span>");
             }
             echo("</td>");
             
-            if ($x == 0 && $prevLinkID && $srcIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-src' => $srcIDs[$x], 'move-srcid' => $srcSentIDs[$x], 'to' => $prevLinkID]);
+            if ($x == 0 && $prevLinkID && $row['srcIDs'][$x]){
+                $query = make_query(['changelink' => $row['linkID'], 'move-src' => $row['srcIDs'][$x], 'to' => $prevLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentFirstBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
                           onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇑</td>");
             }
-            elseif ($x == count($srcIDs)-1 && $srcIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-src' => $srcIDs[$x], 'move-srcid' => $srcSentIDs[$x], 'to' => $nextLinkID]);
+            elseif ($x == count($row['srcIDs'])-1 && $row['srcIDs'][$x]){
+                $query = make_query(['changelink' => $row['linkID'], 'move-src' => $row['srcIDs'][$x], 'to' => $nextLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
@@ -488,18 +600,18 @@ function print_editable_bitext_table($results,
             }
             
             echo("<td class='segment-src'>");
-            echo($srcSents[$x]);
+            echo($row['srcSents'][$x]);
             echo("</td>");
 
-            if ($x == count($srcIDs)-1 && $srcIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-src' => $srcIDs[$x], 'move-srcid' => $srcSentIDs[$x], 'to' => $nextLinkID]);
+            if ($x == count($row['srcIDs'])-1 && $row['srcIDs'][$x]){
+                $query = make_query(['changelink' => $row['linkID'], 'move-src' => $row['srcIDs'][$x], 'to' => $nextLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
                           onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇓</td>");
             }
-            elseif ($x == 0 && $prevLinkID && $srcIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-src' => $srcIDs[$x], 'move-srcid' => $srcSentIDs[$x], 'to' => $prevLinkID]);
+            elseif ($x == 0 && $prevLinkID && $row['srcIDs'][$x]){
+                $query = make_query(['changelink' => $row['linkID'], 'move-src' => $row['srcIDs'][$x], 'to' => $prevLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentFirstBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
@@ -509,15 +621,11 @@ function print_editable_bitext_table($results,
                 echo("<td class='segment-move'></td>");
             }
             echo('</tr>');
-            // wastebasket: &#x1f5d1;
-            // circle with cross for delete: &#x29BB;
-            // white arrow up: ⇑ (thicker than the one down - why?)
-            // white arrow down: ⇩
         }
         echo('</table></td>');
             
         if ($showScores){
-            $score = $row[2];
+            $score = $row['alignerScore'];
             $color = score_color($score);
             echo("<td bgcolor='$color' class='centeralign'>$score</td>");
         }
@@ -535,21 +643,21 @@ function print_editable_bitext_table($results,
             
 
         echo('<td class="bitext-trg"><table class="segment">');
-        for ($x=0; $x<count($trgIDs);$x++){
-            array_push($trgAnchors,$trgIDs[$x]);
-            echo '<a name="trg-'.$trgIDs[$x].'" />';
+        for ($x=0; $x<count($row['trgIDs']);$x++){
+            array_push($trgAnchors,$row['trgIDs'][$x]);
+            echo '<a name="trg-'.$row['trgIDs'][$x].'" />';
             $anchor = (count($trgAnchors) > 4) ? '#trg-'.$trgAnchors[count($trgAnchors)-4] : '';
             echo("<tr>");
             
-            if ($x == count($trgIDs)-1 && $trgIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-trg' => $trgIDs[$x], 'move-trgid' => $trgSentIDs[$x], 'to' => $nextLinkID]);
+            if ($x == count($row['trgIDs'])-1 && $row['trgIDs'][$x]){
+                $query = make_query(['changelink' => $row['linkID'], 'move-trg' => $row['trgIDs'][$x], 'to' => $nextLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
                           onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇓</td>");
             }
-            elseif ($x == 0 && $prevLinkID && $trgIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-trg' => $trgIDs[$x], 'move-trgid' => $trgSentIDs[$x], 'to' => $prevLinkID]);
+            elseif ($x == 0 && $prevLinkID && $row['trgIDs'][$x]){
+                $query = make_query(['changelink' => $row['linkID'], 'move-trg' => $row['trgIDs'][$x], 'to' => $prevLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentFirstBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
@@ -560,18 +668,18 @@ function print_editable_bitext_table($results,
             }
 
             echo("<td class='segment-trg'>");
-            echo($trgSents[$x]);
+            echo($row['trgSents'][$x]);
             echo("</td>");
 
-            if ($x == 0 && $prevLinkID && $trgIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-trg' => $trgIDs[$x], 'move-trgid' => $trgSentIDs[$x], 'to' => $prevLinkID]);
+            if ($x == 0 && $prevLinkID && $row['trgIDs'][$x]){
+                $query = make_query(['changelink' => $row['linkID'], 'move-trg' => $row['trgIDs'][$x], 'to' => $prevLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentFirstBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
                           onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇑</td>");
             }
-            elseif ($x == count($trgIDs)-1 && $trgIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'move-trg' => $trgIDs[$x], 'move-trgid' => $trgSentIDs[$x], 'to' => $nextLinkID]);
+            elseif ($x == count($row['trgIDs'])-1 && $row['trgIDs'][$x]){
+                $query = make_query(['changelink' => $row['linkID'], 'move-trg' => $row['trgIDs'][$x], 'to' => $nextLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
@@ -582,18 +690,15 @@ function print_editable_bitext_table($results,
             }
             
             // echo("<td class='segment-id'>");
-            if ($trgIDs[$x]){
-                $query = make_query(['changelink' => $linkID, 'del-trg' => $trgIDs[$x], 'del-trgid' => $trgSentIDs[$x]]);
+            if ($row['trgIDs'][$x]){
+                $query = make_query(['changelink' => $row['linkID'], 'del-trg' => $row['trgIDs'][$x]]);
                 echo("<td class='segment-move' onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                             onMouseOut=\"setStyle(this,'backgroundColor','white')\"
                             onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x1f5d1;");
-#                echo("<span onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
-#                            onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-#                            onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x1f5d1;</span>&nbsp;");
                 echo("</td>");
             }
             echo("<td class='segment-move'>");
-            echo($trgIDs[$x]);
+            echo($row['trgIDs'][$x]);
             echo('</td></tr>');
         }
         echo('</table></td>');
@@ -603,17 +708,19 @@ function print_editable_bitext_table($results,
 
         if ($showMyRatings && $textOK){
             echo('<td class="centeralign">');
-            print_rating_stars($bitextID,$linkID);
+            // print_rating_stars($bitextID,$row['linkID']);
+            printRatingStars($bitext,$row['linkID']);
             echo('</td>');
         }
         if ($showRatings && $textOK){
             echo('<td class="centeralign">');
-            print_average_ratings($bitextID,$linkID);
+            // print_average_ratings($bitextID,$row['linkID']);
+            printAverageRatings($bitext,$row['linkID']);
             echo('</td>');
         }
             
         echo('</tr>'."\n");
-        $prevLinkID = $linkID;
+        $prevLinkID = $row['linkID'];
     }
     echo('</table>');
     return $i;
@@ -626,9 +733,9 @@ function print_editable_bitext_table($results,
 // TEST FOR PRINTING LINKS
 
 function print_links($corpus, $version, $fromDoc, $toDoc){
-    global $algDBH;
+    global $linksDBH;
     echo('<pre>');
-    $results = $algDBH->query("SELECT DISTINCT srcIDs,trgIDs FROM alignments WHERE corpus='$corpus' AND version='$version' AND fromDoc='$fromDoc' AND toDoc='$toDoc'");
+    $results = $linksDBH->query("SELECT DISTINCT srcIDs,trgIDs FROM alignments WHERE corpus='$corpus' AND version='$version' AND fromDoc='$fromDoc' AND toDoc='$toDoc'");
     if ($results){
         while ($row = $results->fetchArray(SQLITE3_NUM)) {
             echo($row[0]." - ".$row[1]."\n");

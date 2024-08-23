@@ -3,6 +3,15 @@
 # TODO's
 
 
+the new link DB format:
+
+* fix search
+* change link should also set internal sentence ID fields, properly handle changes in all fields
+* lookup of internal sentence IDs is still done via linkedsource/linkedtarget
+* convert Kajsa's alignment edits to the new link DB format!
+
+
+
 * improve language selection screen (need to scale if many language pairs will be available); could be similar to opus-mt dashboard
 * bugfix in link DB: (linkID,sentID) does not have to be unique (Quite a complex change with lots of implications. Can we leave it like this? The chance to have the same sentence twice in one translation unit is quite small.)
 * enable editing without sentence index DBs (*.ids.db) - requires to create and update user-specific *linked.db files!

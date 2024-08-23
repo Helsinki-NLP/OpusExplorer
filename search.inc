@@ -93,16 +93,19 @@ function search_display_options($searchquery){
 function search($searchquery, $searchside, $langpair, $corpus='', $version='', $bitextID='',
                 $limit=10, $offset=0, $orderByLinkID=0){
     // global $showMaxAlignments, $showScores, $showLengthRatio, $showRatings, $showMyRatings, $showEmpty;
+    // global $linkDbFile, $srcFtsFile, $trgFtsFile;
     global $showScores, $showLengthRatio, $showRatings, $showMyRatings;
-    global $linkDbFile, $srcFtsFile, $trgFtsFile;
+    global $srcDBH, $trgDBH, $linksDBH;
     global $fromDoc, $toDoc;
     global $allowSortLinks;
 
     list($srclang,$trglang) = explode('-',$langpair);
 
+    /*
     $srcDBH = new SQLite3($srcFtsFile,SQLITE3_OPEN_READONLY);
     $trgDBH = new SQLite3($trgFtsFile,SQLITE3_OPEN_READONLY);
     $linksDBH = new SQLite3($linkDbFile,SQLITE3_OPEN_READONLY);
+    */
 
     $bitexts = array();
     $corpusID = 0;

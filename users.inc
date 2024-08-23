@@ -24,6 +24,8 @@ function logged_in ( ) {
         return true;
     }
 
+    $PHP_SELF = $_SERVER['PHP_SELF'];
+        
     global $ALLOW_GUEST_USERS;
     
     if ($ALLOW_GUEST_USERS){
@@ -84,17 +86,19 @@ function logged_in ( ) {
             echo "Please, login with your username and password below!<br/>";
         }
     }
-    elseif ($_GET['reset'] && $_GET['email']){
-        echo('<div class="rightalign"><a href="help.php">[help]</a>[login]</div></br><hr>');
-        echo "Password reset requested: Change your password below!<br/><br/>";
-        echo "<form action=\"$PHP_SELF\" method=\"post\"><table>";
-        echo '<tr><td>username:</td><td><input type="user" value="'.$_GET['user'].'" name="user"></td></tr>';
-        echo '<tr><td>  e-mail:</td><td><input type="email" value="'.$_GET['email'].'" name="email"></td></tr>';
-        echo '<tr><td>password:</td><td><input type="password" name="password"></td></tr>';
-        echo '</table><p>';
-        echo '<input type="submit" name="submit" value="submit">';
-        echo '</form>';
-        return false;
+    elseif (isset($_GET['reset']) && isset($_GET['email'])){
+        if ($_GET['reset'] && $_GET['email']){
+            echo('<div class="rightalign"><a href="help.php">[help]</a>[login]</div></br><hr>');
+            echo "Password reset requested: Change your password below!<br/><br/>";
+            echo "<form action=\"$PHP_SELF\" method=\"post\"><table class='login'>";
+            echo '<tr><td class="login">username:</td><td class="login"><input type="user" value="'.$_GET['user'].'" name="user"></td></tr>';
+            echo '<tr><td class="login">  e-mail:</td><td class="login"><input type="email" value="'.$_GET['email'].'" name="email"></td></tr>';
+            echo '<tr><td class="login">password:</td><td class="login"><input type="password" name="password"></td></tr>';
+            echo '</table><p>';
+            echo '<input type="submit" name="submit" value="submit">';
+            echo '</form>';
+            return false;
+        }
     }
 
     echo('<div class="rightalign"><a href="help.php">[help]</a>[login]</div></br><hr>');
@@ -108,10 +112,10 @@ function logged_in ( ) {
         echo "There is a guest account for testing: use username = guest, password = guest<br />";
     }
 
-    echo "<br/><form action=\"$PHP_SELF\" method=\"post\"><table>";
-    echo '<tr><td>username:</td><td><input type="user" name="user"></td></tr>';
-    echo '<tr><td>  e-mail:</td><td><input type="email" name="email"></td></tr>';
-    echo '<tr><td>password:</td><td><input type="password" name="password"></td></tr>';
+    echo "<br/><form action=\"$PHP_SELF\" method=\"post\"><table class='login'>";
+    echo '<tr><td class="login">username:</td><td class="login"><input type="user" name="user"></td></tr>';
+    echo '<tr><td class="login">  e-mail:</td><td class="login"><input type="email" name="email"></td></tr>';
+    echo '<tr><td class="login">password:</td><td class="login"><input type="password" name="password"></td></tr>';
     echo '</table><p>';
     echo '<input type="submit" name="submit" value="login">';
     echo '<input type="submit" name="reset" value="reset password"></p>';

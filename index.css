@@ -1,6 +1,10 @@
 
 div.rightalign  {text-align: right; float: right; display: inline;}
 
+
+table.login     {border: none;}
+td.login        {border: none;}
+
 table.doclist   {border: none;}
 td.doclist      {border: none;padding-left: 30px;padding-top: 3px;padding-bottom: 3px;}
 td.docliststars {border: none;padding-left: 10px;padding-top: 0;padding-bottom: 0;text-align: center;}

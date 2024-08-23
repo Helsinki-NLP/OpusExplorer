@@ -23,6 +23,51 @@ function bitext_rating_options(){
 }
 
 
+
+function printRatingStars($bitext,$linkID){
+    $rating = $bitext->getMyAlignmentRating($linkID);
+    for ($x=1;$x<=$rating;$x++){
+        $query = make_query(['rating' => $x, 'bitextID' => $bitextID, 'linkID' => $linkID]);
+        echo '<a style="text-decoration: none; color: #ffbb00;" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">★</a>';
+    }
+    if ($rating < 5){
+        for ($y=$x;$y<=5;$y++){
+            $query = make_query(['rating' => $y, 'bitextID' => $bitextID, 'linkID' => $linkID]);
+            echo '<a style="text-decoration: none; color: black;" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">☆</a>';
+        }
+    }
+}
+
+function printAverageRatings($bitext,$linkID){
+    $rating = $bitext->getAverageAlignmentRating($linkID);
+    printStars($rating);
+    return $rating;
+}
+
+function printStars($rating){
+    echo '<span style="color: #ffbb00;">';
+    for ($x=1;$x<=$rating+0.25;$x++) echo '★';
+    if ($rating >= $x-0.75 && $rating <= $x-0.25){ echo '☆';$x++; }
+    echo '</span>';
+    if ($rating < 5){
+        for ($y=$x;$y<=5;$y++) echo '☆';
+    }
+}
+
+
+
+
+
+
+//////////////////////////
+//////////////////////////
+///// delete from here??? //
+//////////////////////////
+//////////////////////////
+
+
+
+
 function print_rating_stars($bitextID,$linkID){
     $rating = get_alignment_rating($bitextID,$linkID,$_SESSION['user']);
     for ($x=1;$x<=$rating;$x++){
