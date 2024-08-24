@@ -67,6 +67,8 @@ function printStars($rating){
 
 
 
+/*
+
 
 function print_rating_stars($bitextID,$linkID){
     $rating = get_alignment_rating($bitextID,$linkID,$_SESSION['user']);
@@ -180,6 +182,6 @@ function delete_alignment_rating($linkID,$user=''){
     }
 }
 
-
+*/
 
 ?>

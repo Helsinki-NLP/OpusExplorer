@@ -28,7 +28,7 @@ include('env.inc');
 include('users.inc');
 include('opus.inc');
 include('opusindex.inc');
-include('db.inc');
+// include('db.inc');
 include('bitexts.inc');
 include('ratings.inc');
 include('search.inc');
@@ -94,6 +94,7 @@ $fromDocQuery = filter_var(get_param('fromDocQuery',''),FILTER_SANITIZE_STRING);
 $linkID = get_param('linkID',0);
 $rating = get_param('rating',0);
 
+/*
 if ($srclang && $trglang){
     $srcDbFile      = get_lang_dbfile($srclang);
     $trgDbFile      = get_lang_dbfile($trglang);
@@ -115,17 +116,21 @@ if ($srclang && $trglang){
     $browsable = 1;
     $searchable = 1;
 
-    $bitext = new bitext($DB_DIR, $user, $corpus, $version, $langpair, $fromDoc, $toDoc, $showModified);
 }
+*/
 
 
+$browsable = 1;
+$searchable = 1;
 
 
-if ($rating){
-    set_link_db($bitextID);
-    add_alignment_rating($bitextID,$linkID,$_SESSION['user'],$rating);
-    delete_param('linkID');
-    delete_param('rating');
+if ($srclang && $trglang){
+    $bitext = new bitext($DB_DIR, $user, $corpus, $version, $langpair, $fromDoc, $toDoc, $showModified);    
+    if ($rating){
+        $bitext->addAlignmentRating($bitextID,$linkID,$rating);
+        delete_param('linkID');
+        delete_param('rating');
+    }
 }
 
 
@@ -182,18 +187,16 @@ if ($searchquery && $searchable){
     $searchlimit = get_param('limit',10);
     $searchoffset = get_param('offset',0);
     $searchside = get_param('action','search source');
-    search($searchquery, $searchside,
-           $langpair, $corpus, $version, $bitextID,
-           $searchlimit, $searchoffset);
+    search($searchquery, $searchside, $bitext, $searchlimit, $searchoffset);
 }
 elseif ($srclang && $trglang){    
     if ($corpus && $version){
         if ($fromDoc && $toDoc){
             print_bitext($bitext, $alignType, $offset);
         }
-        else print_document_list($corpus, $version, $offset, $fromDocQuery);
+        else print_document_list($bitext, $offset, $fromDocQuery);
     }
-    else print_corpus_list();
+    else print_corpus_list($bitext);
 }
 else print_langpair_list();
 

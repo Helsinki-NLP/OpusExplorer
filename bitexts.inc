@@ -12,6 +12,8 @@ class bitext {
     public $corpus;
     public $version;
     public $langpair;
+    public $srclang;
+    public $trglang;
     public $fromDoc;
     public $toDoc;
 
@@ -24,14 +26,18 @@ class bitext {
         $this->user = $user;
 
         list($srclang,$trglang) = explode('-',$langpair);
+        $this->srclang = $srclang;
+        $this->trglang = $trglang;
         $this->index = new opusindex($indexDir, $user, $srclang, $trglang, $corpus, $version, $fromDoc ,$toDoc);
-        $bitextID=$this->id();
-        if ($showUserData) $this->$userDataExists = $this->index->openUserDB($bitextID);
+        if ($fromDoc && $toDoc){
+            $bitextID=$this->id();
+            if ($showUserData && $bitextID) $this->$userDataExists = $this->index->openUserDB($bitextID);
+        }
     }
             
     public function id(){
         if ($this->bitextID) return $this->bitextID;
-        if ($id = get_param('bitextID')){
+        if ($id = get_param('bitextID',0)){
             $this->bitextID = $id;
         }
         else{
@@ -43,6 +49,7 @@ class bitext {
         }
         return $this->bitextID;
     }
+    
     public function fromDocID(){
         if ($this->fromDocID) return $this->fromDocID;
         if ($id = get_param('fromDocID')){
@@ -50,7 +57,8 @@ class bitext {
             set_param('fromDocID',$id);
         }
         return $this->fromDocID;
-    }    
+    }
+    
     public function toDocID(){
         if ($this->toDocID) return $this->toDocID;
         if ($id = get_param('toDocID')){
@@ -60,9 +68,39 @@ class bitext {
         return $this->toDocID;
     }
 
-    public function alignments($type, $limit, $offset){
+    public function bitext($bitextID){
+        return $this->index->getBitext($bitextID);
+    }
+
+    public function corpora(){
+        $corpora = new corpora($this, $this->index);
+        $corpora->fetch();
+        return $corpora;        
+    }
+            
+    public function documents($offset=0, $limit=10, $fromDocQuery='', $toDocQuery=''){
+        $docpairs = new documentPairs($this, $this->index);
+        $docpairs->fetch($fromDocQuery, $toDocQuery, $limit, $offset);
+        return $docpairs;
+    }
+
+    public function getSourceDocumentID($document){
+        return $this->index->getSourceDocumentID($this->corpus, $this->version, $document);
+    }
+    
+    public function getTargetDocumentID($document){
+        return $this->index->getTargetDocumentID($this->corpus, $this->version, $document);
+    }
+        
+    public function alignments($type, $limit=10, $offset=0){
         $alignments = new alignments($this, $this->index);
         $alignments->fetch($type, $limit, $offset);
+        return $alignments;
+    }
+
+    public function search($query, $side, $bitextID, $limit=10, $offset=0, $orderByLinkID=0){
+        $alignments = new alignmentSearchResult($this, $this->index);
+        $alignments->fetch($query,$side,$bitextID,$limit,$offset,$orderByLinkID);
         return $alignments;
     }
 
@@ -71,17 +109,80 @@ class bitext {
     }
 
     public function getMyAlignmentRating($linkID){
-        return $this->index->getAlignmentRating($this->id(),$linkID,$this->user);
+        $user = $this->user;
+        if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
+        return $this->index->getAlignmentRating($this->id(),$linkID,$user);
     }
 
     public function getAverageAlignmentRating($linkID){
         return $this->index->getAlignmentRating($this->id(),$linkID);
     }
 
+    public function getMyBitextRating($bitextID){
+        $user = $this->user;
+        if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
+        if (!$bitextID) $bitextID=$this->id();
+        return $this->index->getBitextRating($bitextID,$user);
+    }
+
+    public function getAverageBitextRating($bitextID){
+        if (!$bitextID) $bitextID=$this->id();
+        return $this->index->getBitextRating($bitextID);
+    }
+
+    public function addAlignmentRating($bitextID,$linkID,$rating){
+        if (!$bitextID) $bitextID=$this->id();
+        $user = $this->user;
+        if ($user){
+            if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
+            return $this->index->addAlignmentRating($bitextID,$linkID,$user,$rating);
+        }
+        return false;
+    }
+
+    public function deleteAlignmentRating($linkID, $user=''){
+        if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
+        return $this->index->deleteAlignmentRating($linkID,$user);
+    }
+    
+
+    public function changeLink($oldLinkID, $actions){
+        
+        $bitextID = $this->id();
+        if (! $bitextID) return false;
+        if (! $userDbFile = $this->index->initializeUserDB($bitextID)) return false;
+
+        if (isset($actions['del-src'])){
+            $this->index->deleteSrcIdFromLink($oldLinkID, $actions['del-src']);
+            $this->deleteAlignmentRating($oldLinkID);
+        }
+        elseif (isset($actions['del-trg'])){
+            $this->index->deleteTrgIdFromLink($oldLinkID, $actions['del-trg']);
+            $this->deleteAlignmentRating($oldLinkID);
+        }
+        elseif (isset($actions['move-src'])){
+            $newLinkID = $actions['to'];
+            $push = ($newLinkID < $oldLinkID);
+            $sentID = $this->index->deleteSrcIdFromLink($oldLinkID, $actions['move-src']);
+            $this->index->addSrcIdToLink($bitextID, $newLinkID, $actions['move-src'],$sentID, $push);
+            $this->deleteAlignmentRating($oldLinkID);
+            $this->deleteAlignmentRating($newLinkID);
+        }
+        elseif (isset($actions['move-trg'])){
+            $newLinkID = $actions['to'];
+            $push = ($newLinkID < $oldLinkID);
+            $sentID = $this->index->deleteTrgIdFromLink($oldLinkID, $actions['move-trg']);
+            $this->index->addTrgIdToLink($bitextID, $newLinkID, $actions['move-trg'],$sentID, $push);
+            $this->deleteAlignmentRating($oldLinkID);
+            $this->deleteAlignmentRating($newLinkID);
+        }    
+    }
+
+
 }
 
 
-class alignments{
+class corpora {
     
     public $bitext;
     protected $index;
@@ -91,10 +192,45 @@ class alignments{
         $this->bitext = $bitext;
         $this->index = $index;        
     }
+    public function fetch(){
+        $this->searchResults = $this->index->getCorpora();
+    }
+    public function next(){
+        if ($this->searchResults)
+            return $this->searchResults->fetchArray(SQLITE3_ASSOC);
+        return false;
+    }
 
+}
+
+        
+class documentPairs extends corpora{
+    
+    public function fetch($fromDocQuery='', $toDocQuery='', $limit=10, $offset=0){
+        $corpus = $this->bitext->corpus;
+        $version = $this->bitext->version;
+        $this->searchResults = $this->index->getDocuments($corpus, $version,
+                                                          $fromDocQuery, $toDocQuery,
+                                                          $limit, $offset);
+    }
+
+    public function next(){
+        if ($this->searchResults){
+            if ($docpair = $this->searchResults->fetchArray(SQLITE3_ASSOC)){
+                $docpair['bitextID'] = $docpair['rowid'];
+                return $docpair;
+            }
+        }
+        return false;
+    }
+}
+
+
+
+class alignments extends documentPairs {
+    
     public function fetch($type, $limit, $offset){
-        global $linksDBH;
-        $this->searchResults = $this->index->getAlignments($this->bitext->id(), $type, $offset);
+        $this->searchResults = $this->index->getAlignments($this->bitext->id(), $type, $limit, $offset);
     }
 
     public function nextLink(){
@@ -111,15 +247,10 @@ class alignments{
                 if ($link['srcSentIDs'] || $link['trgSentIDs']){
                     $link['srcSentIDs'] = $link['srcSentIDs'] ? explode(' ',$link['srcSentIDs']) : array();
                     $link['trgSentIDs'] = $link['trgSentIDs'] ? explode(' ',$link['trgSentIDs']) : array();
-                        
                 }
                 else{
                     list($link['srcSentIDs'],
-                         $link['trgSentIDs']) = get_linked_sentences_ids($link['linkID'],
-                                                                         $link['srcIDs'], $link['trgIDs'],
-                                                                         $bitext->corpus, $bitext->version,
-                                                                         $bitext->fromDoc, $bitext->toDoc,
-                                                                         $bitext->fromDocID(), $bitext->toDocID());
+                         $link['trgSentIDs']) = $this->index->fetchLinkedSentenceIDs($link['linkID']);
                 }
 
                 $link['srcIDs'] = $link['srcIDs'] ? explode(' ',$link['srcIDs']) : array();
@@ -127,20 +258,74 @@ class alignments{
                 $link['srcSents'] = array();
                 $link['trgSents'] = array();
 
-                global $srcDBH,$trgDBH;
                 foreach ($link['srcSentIDs'] as $id)
-                    if ($id) array_push($link['srcSents'], fetch_sentence($srcDBH, $id));
+                    if ($id) array_push($link['srcSents'], $this->index->fetchSourceSentence($id));
                 foreach ($link['trgSentIDs'] as $id)
-                    if ($id) array_push($link['trgSents'], fetch_sentence($trgDBH, $id));
+                    if ($id) array_push($link['trgSents'], $this->index->fetchTargetSentence($id));
                 
                 return $link;
             }
         }
         return false;
     }
-
 }
 
+class alignmentSearchResult extends alignments {
+
+    private $searchside;
+    
+    public function fetch($query, $side, $bitextID='',$limit=10, $offset=0, $orderByLinkID=0){
+        $this->searchResults = $this->index->searchAlignments($query, $side, $bitextID,
+                                                              $limit, $offset, $orderByLinkID);
+        $this->searchside = $side;
+    }
+
+    public function next(){
+        if ($this->searchResults){
+            if ($data = $this->searchResults->fetchArray(SQLITE3_ASSOC)){
+                if (! isset($data['linkID'])) return false;
+                $link = $this->index->getLink($data['linkID']);
+                
+                if ($link['srcSentIDs'] || $link['trgSentIDs']){
+                    $link['srcSentIDs'] = $link['srcSentIDs'] ? explode(' ',$link['srcSentIDs']) : array();
+                    $link['trgSentIDs'] = $link['trgSentIDs'] ? explode(' ',$link['trgSentIDs']) : array();
+                }
+                else{
+                    list($link['srcSentIDs'],
+                         $link['trgSentIDs']) = $this->index->fetchLinkedSentenceIDs($link['linkID']);
+                }
+
+                $link['srcIDs'] = $link['srcIDs'] ? explode(' ',$link['srcIDs']) : array();
+                $link['trgIDs'] = $link['trgIDs'] ? explode(' ',$link['trgIDs']) : array();
+                $link['srcSents'] = array();
+                $link['trgSents'] = array();
+
+
+                if (isset($data['sentID'])) $sentID=$data['sentID'];
+                if (isset($data['sentence'])) $sent=$data['sentence'];
+
+                $link['srcSents'] = array();
+                foreach ($link['srcSentIDs'] as $id){
+                    if ($this->searchside == 'search source' && $id == $sentID)
+                        array_push($link['srcSents'], $sent);
+                    else
+                        array_push($link['srcSents'], $this->index->fetchSourceSentence($id));
+                }
+
+                $link['trgSents'] = array();
+                foreach ($link['trgSentIDs'] as $id){
+                    if ($this->searchside == 'search target' && $id == $sentID)
+                        array_push($link['trgSents'], $sent);
+                    else
+                        array_push($link['trgSents'], $this->index->fetchTargetSentence($id));
+                }
+                
+                return $link;
+            }
+        }
+        return false;
+    }
+}
 
 
 function bitext_browsing_links($bitext, $selectedAlignType=''){
@@ -288,8 +473,7 @@ function print_bitext($bitext, $type='', $offset=0){
         $showEmpty = 1;
         $type = '';
         if (isset($_GET['changelink'])){
-            $userLinkDbFile = initialize_user_link_db($bitextID);
-            change_link($userLinkDbFile, $bitextID, $_GET['changelink']);
+            $bitext->changeLink($_GET['changelink'],$_GET);
         }
     }
 
@@ -724,24 +908,6 @@ function print_editable_bitext_table($alignments,
     }
     echo('</table>');
     return $i;
-}
-
-
-
-
-
-// TEST FOR PRINTING LINKS
-
-function print_links($corpus, $version, $fromDoc, $toDoc){
-    global $linksDBH;
-    echo('<pre>');
-    $results = $linksDBH->query("SELECT DISTINCT srcIDs,trgIDs FROM alignments WHERE corpus='$corpus' AND version='$version' AND fromDoc='$fromDoc' AND toDoc='$toDoc'");
-    if ($results){
-        while ($row = $results->fetchArray(SQLITE3_NUM)) {
-            echo($row[0]." - ".$row[1]."\n");
-        }
-    }
-    echo('</pre>');
 }
 
 

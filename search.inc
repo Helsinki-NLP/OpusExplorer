@@ -90,211 +90,135 @@ function search_display_options($searchquery){
 
 
 
-function search($searchquery, $searchside, $langpair, $corpus='', $version='', $bitextID='',
-                $limit=10, $offset=0, $orderByLinkID=0){
-    // global $showMaxAlignments, $showScores, $showLengthRatio, $showRatings, $showMyRatings, $showEmpty;
-    // global $linkDbFile, $srcFtsFile, $trgFtsFile;
+
+function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $orderByLinkID=0){
     global $showScores, $showLengthRatio, $showRatings, $showMyRatings;
-    global $srcDBH, $trgDBH, $linksDBH;
-    global $fromDoc, $toDoc;
-    global $allowSortLinks;
+    global $allowSortLinks;    
 
-    list($srclang,$trglang) = explode('-',$langpair);
-
-    /*
-    $srcDBH = new SQLite3($srcFtsFile,SQLITE3_OPEN_READONLY);
-    $trgDBH = new SQLite3($trgFtsFile,SQLITE3_OPEN_READONLY);
-    $linksDBH = new SQLite3($linkDbFile,SQLITE3_OPEN_READONLY);
-    */
-
-    $bitexts = array();
-    $corpusID = 0;
+    $langpair = $bitext->langpair;
+    $corpus = $bitext->corpus;
+    $version = $bitext->version;
+    $fromDoc = $bitext->fromDoc;
+    $toDoc = $bitext->toDoc;
+    $bitextID = $bitext->id();
     
-    $srcquery = $searchside == 'search source' ? $searchquery : '';
-    $trgquery = $searchside == 'search target' ? $searchquery : '';
+    $alignments = $bitext->search($searchquery, $searchside, $bitextID, $limit, $offset, $orderByLinkID);
 
-    $conditions = array();
-    if ($searchquery) array_push($conditions, "sentence MATCH '".$searchquery."'");
-    if ($bitextID)    array_push($conditions, 'bitextID='.$bitextID);
-    $condition = implode(' AND ',$conditions);
+    search_navigation($searchquery, $offset, $limit);
+    search_display_options($searchquery);
+    $shown=0;
+    echo("<table class='bitext'>\n<tr>\n");
 
-    $ordering = $orderByLinkID ? ' ORDER BY linkID ' : '';    
-    $limitstr = $limit ?  " LIMIT ".$limit : '';
-    $offsetstr = $offset ? " OFFSET ".$offset : '';
-
-    $start = microtime(true);
+    // show either bitext ID (if we search)
+    // or link ID (if we browse, can be sorted)
     if ($searchquery){
-        if ($searchside == 'search target'){
-            $linksDBH->exec("ATTACH DATABASE '/media/OpusIndex/".$trglang.".fts5.db' AS trgdb");
-            $results = $linksDBH->query(
-                "SELECT linkID, bitextID, sentID, highlight(sentences,0, '<b>', '</b>') sentence 
-                        FROM trgdb.sentences as trg
-                        INNER JOIN linkedtarget ON trg.rowid=linkedtarget.sentID
-                        WHERE ".$condition.$ordering.$limitstr.$offsetstr);
-        }
-        else{
-            $linksDBH->exec("ATTACH DATABASE '/media/OpusIndex/".$srclang.".fts5.db' AS srcdb");
-            $results = $linksDBH->query(
-                "SELECT linkID, bitextID, sentID, highlight(sentences,0, '<b>', '</b>') sentence 
-                        FROM srcdb.sentences as src
-                        INNER JOIN linkedsource ON src.rowid=linkedsource.sentID
-                        WHERE ".$condition.$ordering.$limitstr.$offsetstr);
-        }
+        echo("<th>bitext ID</th>");
     }
     else{
-        $results = $linksDBH->query("SELECT DISTINCT linkID, bitextID FROM linkedsource WHERE ".$condition.$ordering.$limitstr.$offsetstr);
+        echo("<th>link ID");
+        if ($allowSortLinks){
+            $query = make_query(['sortLinkIDs' => (! $orderByLinkID)]);
+            $sortlabel = $orderByLinkID ? '&#x29BB;' : '⇓';
+            echo(' <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$sortlabel.'</a>');
+        }
+        echo("</th>");
     }
-    $queryTime = microtime(true) - $start;
+
+    echo("<th style='text-align: right;'>source language");
+    print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $srcquery, 1, 0);
+    echo("</th>");
+    if ($showScores) echo('<th>score</th>');
+    if ($showLengthRatio) echo('<th>ratio</th>');
+    echo("<th style='text-align: right;'>target language");
+    print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $trgquery, 0, 1);
+    echo("</th>");
+    if ($showMyRatings) echo('<th>my ratings</th>');
+    if ($showRatings) echo('<th>ratings</th>');
+    echo("</tr>");
+
     
-    $fetchSentenceIdTime = 0;
-    $fetchSentenceTime = 0;
-
-    if ($results){
-        // echo("last = $offset + $limit");
-        search_navigation($searchquery, $offset, $limit);
-        search_display_options($searchquery);
-        $shown=0;
-        echo("<table class='bitext'>\n<tr>\n");
-
-        // show either bitext ID (if we search)
-        // or link ID (if we browse, can be sorted)
+    while ($data = $alignments->next()){
+        $linkID=$data['linkID'];
+        $bitextID=$data['bitextID'];
+        $srcText = implode(' ',$data['srcSents']);
+        $trgText = implode(' ',$data['trgSents']);
+            
+        echo("<tr>\n");
+        echo("<td class='centeralign'>");
         if ($searchquery){
-            echo("<th>bitext ID</th>");
+            if (! ($corpus && $version && $fromDoc && $toDoc) ){
+                $info = $bitext->bitext($bitextID);
+                $query = make_query(['corpus' => $info['corpus'],
+                                     'version' => $info['version'],
+                                     'fromDoc' => $info['fromDoc'],
+                                     'toDoc' => $info['toDoc'],
+                                     'bitextID' => $bitextID,
+                                     'search' => '',
+                                     'offset' => 0]);
+                $hreftitle = implode('/',[$info['corpus'],$info['version'],$info['fromDoc']]);
+
+            }
+            else{
+                $query = make_query(['corpus' => $corpus,
+                                     'version' => $version,
+                                     'fromDoc' => $fromDoc,
+                                     'toDoc' => $toDoc,
+                                     'bitextID' => $bitextID,
+                                     'search' => '',
+                                     'offset' => 0]);
+                $hreftitle = implode('/',[$corpus,$version,$fromDoc]);
+            }
+            echo('<a title="'.$hreftitle.'" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">');
+            echo($bitextID);
+            echo('</a>');
         }
-        else{
-            echo("<th>link ID");
-            if ($allowSortLinks){
-                $query = make_query(['sortLinkIDs' => (! $orderByLinkID)]);
-                $sortlabel = $orderByLinkID ? '&#x29BB;' : '⇓';
-                echo(' <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$sortlabel.'</a>');
-            }
-            echo("</th>");
+        else echo($linkID);
+        echo("</td>\n<td class='rightalign'>");
+        echo($srcText);
+        echo("</td>\n");
+
+        if ($showScores){
+            $score = array_key_exists('alignerScore',$data) ? $data['alignerScore'] : 0;
+            $color = score_color($score);
+            echo("</td><td bgcolor='$color' class='centeralign'>$score");
         }
-
-        echo("<th style='text-align: right;'>source language");
-        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $srcquery, 1, 0);
-        echo("</th>");
-        if ($showScores) echo('<th>score</th>');
-        if ($showLengthRatio) echo('<th>ratio</th>');
-        echo("<th style='text-align: right;'>target language");
-        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $trgquery, 0, 1);
-        echo("</th>");
-        if ($showMyRatings) echo('<th>my ratings</th>');
-        if ($showRatings) echo('<th>ratings</th>');
-        echo("</tr>");
-
-        while ($row = $results->fetchArray(SQLITE3_NUM)) {
-            $linkID=$row[0];
-            $bitextID=$row[1];
-            if (count($row) > 2) $sentID=$row[2];
-            if (count($row) > 3) $sent=$row[3];
-
-            // echo("get linked sentences\n");
-            $start = microtime(true);
-            list($srcIDs,$trgIDs) = fetch_linked_sentence_ids($linksDBH, $linkID);
-            $fetchSentenceIdTime += microtime(true) - $start;
-
-            $srcSents = array();
-            foreach ($srcIDs as $id){
-                $start = microtime(true);
-                if ($searchside == 'search source' && $id == $sentID)
-                    array_push($srcSents, $sent);
-                else
-                    array_push($srcSents, fetch_sentence($srcDBH, $id));
-                $fetchSentenceTime += microtime(true) - $start;
+        if ($showLengthRatio){
+            $srcLen = strlen(str_replace('<b>','',str_replace('</b>','',$srcText)));
+            $trgLen = strlen(str_replace('<b>','',str_replace('</b>','',$trgText)));
+            $ratio = 0;
+            if ($srcLen or $trgLen){
+                $ratio = $srcLen > $trgLen ? $trgLen / $srcLen : $srcLen / $trgLen;
             }
-            $trgSents = array();
-            foreach ($trgIDs as $id){
-                $start = microtime(true);
-                if ($searchside == 'search target' && $id == $sentID)
-                    array_push($trgSents, $sent);
-                else
-                    array_push($trgSents, fetch_sentence($trgDBH, $id));
-                $fetchSentenceTime += microtime(true) - $start;
-            }
-
-            $srcText = implode(' ',$srcSents);
-            $trgText = implode(' ',$trgSents);
+            $color = score_color($ratio);
+            $pretty_ratio = sprintf('%5.3f',$ratio);
+            echo("</td><td bgcolor='$color' class='centeralign'>$pretty_ratio");
+        }
+        
+        echo("<td class='leftalign'>");
+        echo($trgText);
             
-            echo("<tr>\n");
-            echo("<td class='centeralign'>");
-            if ($searchquery){
-                if (! ($corpus && $version && $fromDoc && $toDoc) ){
-                    $bitext = get_bitext($bitextID);
-                    $query = make_query(['corpus' => $bitext['corpus'],
-                                         'version' => $bitext['version'],
-                                         'fromDoc' => $bitext['fromDoc'],
-                                         'toDoc' => $bitext['toDoc'],
-                                         'bitextID' => $bitextID,
-                                         'search' => '', 'offset' => 0]);
-                    $hreftitle = implode('/',[$bitext['corpus'],$bitext['version'],$bitext['fromDoc']]);
-                }
-                else{
-                    $query = make_query(['bitextID' => $bitextID, 'search' => '', 'offset' => 0]);
-                    $hreftitle = implode('/',[$corpus,$version,$fromDoc]);
-                }
-                echo('<a title="'.$hreftitle.'" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">');
-                echo($bitextID);
-                echo('</a>');
-            }
-            else echo($linkID);
-            echo("</td>\n<td class='rightalign'>");
-            echo($srcText);
-            echo("</td>\n");
+        $textOK = ( strpos($srcText, 'SENTENCE NOT FOUND') === false &&
+                    strpos($trgText, 'SENTENCE NOT FOUND') === false );
 
-            if ($showScores){
-                $link = get_link($linkID);
-                $score = array_key_exists('alignerScore',$link) ? $link['alignerScore'] : 0;
-                $color = score_color($score);
-                echo("</td><td bgcolor='$color' class='centeralign'>$score");
-            }
-            if ($showLengthRatio){
-                $srcLen = strlen(str_replace('<b>','',str_replace('</b>','',$srcText)));
-                $trgLen = strlen(str_replace('<b>','',str_replace('</b>','',$trgText)));
-                $ratio = 0;
-                if ($srcLen or $trgLen){
-                    $ratio = $srcLen > $trgLen ? $trgLen / $srcLen : $srcLen / $trgLen;
-                }
-                $color = score_color($ratio);
-                $pretty_ratio = sprintf('%5.3f',$ratio);
-                echo("</td><td bgcolor='$color' class='centeralign'>$pretty_ratio");
-            }
-
-            echo("<td class='leftalign'>");
-            echo($trgText);
-            
-            $textOK = ( strpos($srcText, 'SENTENCE NOT FOUND') === false &&
-                        strpos($trgText, 'SENTENCE NOT FOUND') === false );
-
-            if ($showMyRatings && $textOK){
-                echo('</td><td class="centeralign">');
-                print_rating_stars($bitextID,$linkID);
-            }
-            if ($showRatings && $textOK){
-                echo('</td><td class="centeralign">');
-                print_average_ratings($bitextID,$linkID);
-            }
-
-            echo("</td>\n</tr>\n");
-            $shown++;
+        if ($showMyRatings && $textOK){
+            echo('</td><td class="centeralign">');
+            printRatingStars($bitext,$linkID);
         }
-        echo('</table>');
-        if ($shown < $limit){
-            echo '<script>var x = document.getElementById("next");x.style.visibility = "hidden";</script>';
+        if ($showRatings && $textOK){
+            echo('</td><td class="centeralign">');
+            printAverageRatings($bitext,$linkID);
         }
 
-        $totalTime = $queryTime + $fetchSentenceIdTime + $fetchSentenceTime;
-        echo('<ul>');
-        echo("<li>".$queryTime." (query time)</li>\n");
-        echo("<li>".$fetchSentenceIdTime." (time for fetching sentence IDs)</li>\n");
-        echo("<li>".$fetchSentenceTime." (time for fetching sentences)</li>\n");
-        echo("<li>".$totalTime." (total time for fetching data)</li>\n");
-        echo('</ul>');
+        echo("</td>\n</tr>\n");
+        $shown++;
+    }
+    echo('</table>');
+    if ($shown < $limit){
+        echo '<script>var x = document.getElementById("next");x.style.visibility = "hidden";</script>';
     }
 }
 
-
-
+    
 
 
 ?>
