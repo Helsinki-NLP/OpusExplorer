@@ -80,53 +80,21 @@ $allowEdit = in_array($corpus, $ALLOW_EDIT);
 $allowOtherAlignTypes = in_array($corpus, $ALLOW_EDIT);
 $allowSortLinks = in_array($corpus, $ALLOW_EDIT);
 
-
-$modifiedBitextExists = false;
-$modifiedBitext = false;
-
-
 $orderByLinkID = get_param('sortLinkIDs',0);
 $searchquery = filter_var(get_param('search',''),FILTER_SANITIZE_STRING);
 $fromDocQuery = filter_var(get_param('fromDocQuery',''),FILTER_SANITIZE_STRING);
 
-## check whether we have a new rating to take care of
 
-$linkID = get_param('linkID',0);
-$rating = get_param('rating',0);
 
-/*
 if ($srclang && $trglang){
-    $srcDbFile      = get_lang_dbfile($srclang);
-    $trgDbFile      = get_lang_dbfile($trglang);
-    $srcIdxDbFile   = get_langidx_dbfile($srclang);
-    $trgIdxDbFile   = get_langidx_dbfile($trglang);
+    $bitext = new bitext($DB_DIR, $user, $corpus, $version, $langpair, $fromDoc, $toDoc, $showModified);
+
+    ## check whether we have a new rating to take care of
     
-    $bitextDbFile   = get_bitext_dbfile($langpair);
-    $linkDbFile     = get_link_dbfile($langpair,$corpus,$version,$fromDoc,$toDoc);
-    $algStarsDbFile = get_ratings_dbfile($langpair);
-
-    if ($srcDbFile)    $srcDBH    = new SQLite3($srcDbFile,SQLITE3_OPEN_READONLY);
-    if ($trgDbFile)    $trgDBH    = new SQLite3($trgDbFile,SQLITE3_OPEN_READONLY);
-    if ($srcIdxDbFile) $srcIdxDBH = new SQLite3($srcIdxDbFile,SQLITE3_OPEN_READONLY);
-    if ($trgIdxDbFile) $trgIdxDBH = new SQLite3($trgIdxDbFile,SQLITE3_OPEN_READONLY);
-
-    if ($bitextDbFile) $bitextDBH = new SQLite3($bitextDbFile,SQLITE3_OPEN_READONLY);
-    if ($linkDbFile)   $linksDBH  = new SQLite3($linkDbFile,SQLITE3_OPEN_READONLY);
-
-    $browsable = 1;
-    $searchable = 1;
-
-}
-*/
-
-
-$browsable = 1;
-$searchable = 1;
-
-
-if ($srclang && $trglang){
-    $bitext = new bitext($DB_DIR, $user, $corpus, $version, $langpair, $fromDoc, $toDoc, $showModified);    
-    if ($rating){
+    $linkID = get_param('linkID',0);
+    $rating = get_param('rating',0);
+    
+    if ($linkID && $rating){
         $bitext->addAlignmentRating($bitextID,$linkID,$rating);
         delete_param('linkID');
         delete_param('rating');
@@ -137,7 +105,6 @@ if ($srclang && $trglang){
 /////////////////////////////////////////////////////////////////
 // menu
 /////////////////////////////////////////////////////////////////
-
 
 $query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '',
                      'corpus' => '', 'fromDoc' => '', 'toDoc' => '',
@@ -152,21 +119,16 @@ if ($srclang && $trglang){
     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$langpair.'</a> / ');
     
     if ($corpus && $version){
-        $query = make_query(['fromDoc' => '',
-                             'toDoc' => '',
-                             'search' => '',
-                             'fromDocQuery' => '']);
+        $query = make_query(['fromDoc' => '', 'toDoc' => '',
+                             'search' => '', 'fromDocQuery' => '']);
 
         echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.' / '.$version.'</a> / ');
         
         if ($fromDoc && $toDoc){
-            $query = make_query(['aligntype' => '',
-                                 'offset' => 0,
-                                 'search' => '',
-                                 'sortLinkIDs' => 0,
-                                 'fromDocQuery' => '']);
+            $query = make_query(['aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
+                                 'search' => '', 'fromDocQuery' => '']);
             echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$fromDoc.'</a> / ');
-            if ($browsable && ! $searchquery) bitext_browsing_links($bitext, $alignType);
+            if (! $searchquery) bitext_browsing_links($bitext, $alignType);
         }
     }
     if (! $fromDoc || ! $toDoc){
@@ -183,7 +145,7 @@ echo('</br><hr>');
 /////////////////////////////////////////////////////////////////
 
 
-if ($searchquery && $searchable){
+if ($searchquery){
     $searchlimit = get_param('limit',10);
     $searchoffset = get_param('offset',0);
     $searchside = get_param('action','search source');

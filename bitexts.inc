@@ -521,23 +521,17 @@ function print_horizontal_bitext_table($alignments,
     $toDoc = $bitext->toDoc;
     $bitextID = $bitext->id();
 
-    global $langpair, $searchable, $showModified;
+    global $langpair, $showModified;
     
     echo('<table class="bitext">');
     echo("<tr><th>IDs</th>");
-    if ($searchable){
-        echo("<th style='text-align: right;'>".$fromDoc);
-        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
-    }
-    else echo("<th>".$fromDoc);
+    echo("<th style='text-align: right;'>".$fromDoc);
+    print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
     echo("</th>");
     if ($showScores) echo('<th>score</th>');
     if ($showLengthRatio) echo('<th>ratio</th>');
-    if ($searchable){
-        echo("<th style='text-align: right;'>".$toDoc);
-        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
-    }
-    else echo("<th>".$toDoc);
+    echo("<th style='text-align: right;'>".$toDoc);
+    print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
     echo("</th><th>IDs</th>");
     if ($showMyRatings) echo('<th>my ratings</th>');
     if ($showRatings) echo('<th>ratings</th>');

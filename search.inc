@@ -112,10 +112,10 @@ function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $order
     // show either bitext ID (if we search)
     // or link ID (if we browse, can be sorted)
     if ($searchquery){
-        echo("<th>bitext ID</th>");
+        echo("<th>bitext&nbsp;ID</th>");
     }
     else{
-        echo("<th>link ID");
+        echo("<th>link&nbsp;ID");
         if ($allowSortLinks){
             $query = make_query(['sortLinkIDs' => (! $orderByLinkID)]);
             $sortlabel = $orderByLinkID ? '&#x29BB;' : '⇓';
