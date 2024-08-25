@@ -113,7 +113,21 @@ function print_langpair_list(){
 
 
 function find_bitext_dbs($path){    
-    $langpairs = array();    
+    $langpairs = array();
+    if ($handle = opendir($path.'/sqlite')) {
+        while (false !== ($entry = readdir($handle))) {
+            $parts = explode('.',$entry);
+            if (array_pop($parts) == 'db'){
+                if (count($parts) == 1){
+                    if (count(explode('-',$parts[0])) == 2){
+                        $langpairs[$parts[0]] = true;
+                    }
+                }
+            }
+        }
+        closedir($handle);
+    }
+    /*
     if ($handle = opendir($path)) {
         while (false !== ($entry = readdir($handle))) {
             $parts = explode('.',$entry);
@@ -138,6 +152,7 @@ function find_bitext_dbs($path){
             }
         }
     }
+    */
     return $langpairs;
 }
 
