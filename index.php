@@ -55,7 +55,7 @@ $toDocID   = get_param('toDocID');
 
 $offset = get_param('offset',0);
 $alignType = get_param('aligntype');
-$showEmpty = get_param('showEmpty',0);
+$showEmpty = get_param('showEmpty',1);
 if ($alignType == '0-1' || $alignType == '1-0') $showEmpty=1;
 
 $showScores = get_param('showScores',1);
@@ -94,7 +94,7 @@ if ($srclang && $trglang){
     $linkID = get_param('linkID',0);
     $rating = get_param('rating',0);
     
-    if ($linkID && $rating){
+    if ($rating){
         $bitext->addAlignmentRating($bitextID,$linkID,$rating);
         delete_param('linkID');
         delete_param('rating');

@@ -31,7 +31,7 @@ class bitext {
         $this->index = new opusindex($indexDir, $user, $srclang, $trglang, $corpus, $version, $fromDoc ,$toDoc);
         if ($fromDoc && $toDoc){
             $bitextID=$this->id();
-            if ($showUserData && $bitextID) $this->$userDataExists = $this->index->openUserDB($bitextID);
+            if ($showUserData && $bitextID) $this->index->openUserDB($bitextID);
         }
     }
             

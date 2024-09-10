@@ -304,14 +304,22 @@ class opusindex{
         return $this->bitextDBH->query("SELECT DISTINCT fromDoc,toDoc,rowid FROM bitexts ".$condition.$limit);
     }
     
-    public function getAlignments($bitextID, $type='all', $showMaxAlignments=10, $offset=0){
+    public function getAlignments($bitextID, $type='all', $showMaxAlignments=10, $offset=0, $rangeStart=0, $rangeEnd=0){
         
         // TODO: avoid those globals
         global $showEmpty, $ALIGN_TYPES;
 
-        $conditions = "WHERE bitextID=$bitextID";    
+        $conditions = "bitextID=$bitextID";
+        $orderby = ' ORDER BY linkID ';
         if ($type){
-            if ($type == 'other'){
+            // TODO: order by random becomes really slow on bigger queries!
+            // --> try subqueries where we limit/offset search to some bigger value (maybe randomize that value)
+            // --> problem: we probably need to know how many sentences we have in the bitext
+            // --> and then select a smaller number of elements from that result ordered by random
+            if ($type == 'random'){
+                $orderby = ' ORDER BY RANDOM() ';
+            }
+            elseif ($type == 'other'){
                 foreach ($ALIGN_TYPES as $type){
                     $conditions .= " AND NOT alignType='$type'";
                 }
@@ -323,11 +331,39 @@ class opusindex{
         if ((! $showEmpty) && ($type != 'other')){
             $conditions .= " AND NOT alignType='0-1' AND NOT alignType='1-0'";
         }
-        $limit = "LIMIT $showMaxAlignments";
-        if ($offset){
-            $limit .= " OFFSET $offset";
+        if ($showMaxAlignments || $offset){
+            if ($showEmpty && ((! $type) || ($type == 'all'))){
+                if (!$rangeStart) list($rangeStart,$rangeEnd) = $this->bitextRowIdRange($bitextID);
+                if ($rangeStart){
+                    $start = $rangeStart + $offset;
+                    $end = $start + $showMaxAlignments;
+                    $conditions = 'rowid>='.$start.' AND rowid<'.$end.' AND '.$conditions;
+                }
+                else{
+                    $limit = "LIMIT $showMaxAlignments";
+                    if ($offset) $limit .= " OFFSET $offset";
+                }
+            }
+            else{
+                $limit = "LIMIT $showMaxAlignments";
+                if ($offset) $limit .= " OFFSET $offset";
+            }
         }
-        return $this->linksDBH->query("SELECT * FROM links $conditions ORDER BY linkID $limit");
+        // echo("SELECT * FROM links WHERE $conditions $orderby $limit");
+        return $this->linksDBH->query("SELECT * FROM links WHERE $conditions $orderby $limit");
+    }
+
+    public function bitextRowIdRange($bitextID){
+        if ($res = $this->linksDBH->query("SELECT EXISTS (SELECT name FROM sqlite_master WHERE type='table' AND name='bitext_range')")){
+            if ($row = $res->fetchArray(SQLITE3_NUM)){
+                if ($row[0]){
+                    if ($res = $this->linksDBH->query("SELECT start,end FROM bitext_range WHERE bitextID=".$bitextID)){
+                        return $res->fetchArray(SQLITE3_NUM);
+                    }
+                }
+            }
+        }
+        return array(0,0);
     }
 
     public function searchAlignments($searchquery, $searchside, $bitextID='',
@@ -424,9 +460,11 @@ class opusindex{
 
         // for guest users: add the referring IP address
         if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
-    
+        
         // echo("add rating to $linkStarsDbFile");
-        if (! file_exists($this->linkStarsDbFile) ){
+        // if (! file_exists($this->linkStarsDbFile) ){
+        if (! $this->linkStarsDbFile ){
+            $this->linkStarsDbFile = $this->dbDir.$this->langpair.'.stars.db';
             $DBH = new SQLite3($this->linkStarsDbFile);
             
             $DBH->exec('CREATE TABLE IF NOT EXISTS ratings (bitextID INTEGER,linkID INTEGER,user TEXT,rating INTEGER)');

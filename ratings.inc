@@ -26,6 +26,7 @@ function bitext_rating_options(){
 
 function printRatingStars($bitext,$linkID){
     $rating = $bitext->getMyAlignmentRating($linkID);
+    $bitextID = $bitext->id();
     for ($x=1;$x<=$rating;$x++){
         $query = make_query(['rating' => $x, 'bitextID' => $bitextID, 'linkID' => $linkID]);
         echo '<a style="text-decoration: none; color: #ffbb00;" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">★</a>';
