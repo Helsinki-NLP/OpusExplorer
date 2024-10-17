@@ -3,6 +3,9 @@
 # TODO's
 
 
+* improve speed of browsing through data by better use of rowids (instead of limit/offset queries), see https://stackoverflow.com/questions/12266025/sqlite-query-optimization-using-limit-and-offset; maybe store beginning and end rowid for each bitext?
+* show random sentence alignments: can be done with `ORDER BY RANDOM()`, but this becomes superslow on big corpora (because limit cannot just chop off the first results, ordering needs to be done first) - can we do some cascaded select trick? (see https://www.sqlitetutorial.net/sqlite-subquery/)
+* sort by scores (same problem as above, it becomes slow to order big corpora)
 * improve language selection screen (need to scale if many language pairs will be available); could be similar to opus-mt dashboard
 * bugfix in link DB: (linkID,sentID) does not have to be unique (Quite a complex change with lots of implications. Can we leave it like this? The chance to have the same sentence twice in one translation unit is quite small.)
 * enable editing without sentence index DBs (*.ids.db) - requires to create and update user-specific *linked.db files!
@@ -21,6 +24,12 @@
 * relevance ranking in search results?
 * enable monolingual search
 * enable search in both languages
+
+
+## other ideas
+
+* link OpenSubtitles to metadata from IMDb (https://datasets.imdbws.com/), remember to add leading '0' to the ID with something like `sprintf('%07d', 12345);`
+* add the completely linked subtitles corpus (including alternative subtitles)
 
 
 # SQLite
