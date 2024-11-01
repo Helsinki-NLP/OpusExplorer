@@ -17,6 +17,7 @@ class bitext {
     public $fromDoc;
     public $toDoc;
 
+    public $opusLangpairs;
     public $opusLangpair;
     public $opusSrclang;
     public $opusTrglang;
@@ -37,16 +38,34 @@ class bitext {
             $this->trglang = $trglang;
         }
 
-        if ($opusLangpair){
-            list($opusSrclang,$opusTrglang) = explode('-',$opusLangpair);
-            $this->opusSrclang = $opusSrclang;
-            $this->opusTrglang = $opusTrglang;
-        }
-        
         $this->index = new opusindex($indexDir, $user, $srclang, $trglang, $corpus, $version, $fromDoc ,$toDoc, $opusLangpair);
         if ($fromDoc && $toDoc){
             $bitextID=$this->id();
             if ($showUserData && $bitextID) $this->index->openUserDB($bitextID);
+        }
+
+        // find all OPUS language pairs that exist for the selected srclang-trglang pair
+        // and check that the given opusLangpair is one of them
+        // if not: take the first valid language pair from the list
+        $this->opusLangpairs = $this->index->getOpusLangpairs($corpus, $version, $srclang, $trglang);
+        asort($this->opusLangpairs);
+        if (sizeof($this->opusLangpairs)){
+            if (! $opusLangpair){
+                $this->opusLangpair = $this->opusLangpairs[0];
+                $this->index->setLinkDb($indexDir,$srclang,$trglang,$corpus,$version,$fromDoc,$toDoc,$opusLangpair);
+            }
+            elseif (! in_array($opusLangpair,$this->opusLangpairs)){
+                $this->opusLangpair = $this->opusLangpairs[0];
+                $this->index->setLinkDb($indexDir,$srclang,$trglang,$corpus,$version,$fromDoc,$toDoc,$opusLangpair);
+            }
+            else{
+                $this->opusLangpair = $opusLangpair;
+            }
+        }
+
+        // split the OPUS langpair string into source and target language
+        if ($this->opusLangpair){
+            list($this->opusSrclang,$this->opusTrglang) = explode('-',$this->opusLangpair);
         }
     }
             
@@ -93,9 +112,11 @@ class bitext {
         return $corpora;        
     }
 
+    /*
     public function opusLangpairs(){
         return $this->index->getOpusLangpairs($this->corpus, $this->version, $this->srclang, $this->trglang);
     }
+    */
             
     public function documents($offset=0, $limit=10, $fromDocQuery='', $toDocQuery=''){
         $docpairs = new documentPairs($this, $this->index);
@@ -230,9 +251,14 @@ class documentPairs extends corpora{
     public function fetch($fromDocQuery='', $toDocQuery='', $limit=10, $offset=0){
         $corpus = $this->bitext->corpus;
         $version = $this->bitext->version;
-        $this->searchResults = $this->index->getDocuments($corpus, $version,
+        $this->searchResults = $this->index->getDocuments($this->bitext->corpus, $this->bitext->version,
+                                                          $this->bitext->srclang, $this->bitext->trglang,
+                                                          $this->bitext->opusSrclang, $this->bitext->opusTrglang,
                                                           $fromDocQuery, $toDocQuery,
                                                           $limit, $offset);
+        // $this->searchResults = $this->index->getDocuments($corpus, $version,
+        //                                                   $fromDocQuery, $toDocQuery,
+        //                                                  $limit, $offset);
     }
 
     public function next(){

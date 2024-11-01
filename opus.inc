@@ -1,10 +1,10 @@
 <?php // -*-php-*-
 
 
-function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc,$toDoc, $searchquery){
+function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc,$toDoc,$searchquery,$alignType){
     global $bitext, $bitextID, $opusLangpair;
     
-    $query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '',
+    $query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '', 'opusLangpair' => '',
                          'corpus' => '', 'version' => '', 'fromDoc' => '', 'toDoc' => '',
                          'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
                          'search' => '', 'fromDocQuery' => '']);
@@ -12,21 +12,36 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
 
     if ($srclang && $trglang){
 
-        $opusLangpairs = $corpus ? array() : $bitext->opusLangpairs($corpus,$version,$srclang,$trglang);
-        asort($opusLangpairs);
-        if ((! $opusLangpair) &&  sizeof($opusLangpairs)){
-            $opusLangpair = $opusLangpairs[0];
-            set_param('opusLangpair',$opusLangpair);
+        // $opusLangpairs = $corpus ? array() : $bitext->opusLangpairs($corpus,$version,$srclang,$trglang);
+        // $opusLangpairs = $bitext->opusLangpairs($corpus,$version,$srclang,$trglang);
+        $opusLangpairs = $bitext->opusLangpairs;
+        // asort($opusLangpairs);
+        /*
+        if (sizeof($opusLangpairs)){
+            if ((! $opusLangpair) && sizeof($opusLangpairs)){
+                $opusLangpair = $opusLangpairs[0];
+                set_param('opusLangpair',$opusLangpair);
+            }
+            elseif (! in_array($opusLangpair,$opusLangpairs)){
+                $opusLangpair = $opusLangpairs[0];
+                set_param('opusLangpair',$opusLangpair);
+            }
         }
-        $query = make_query(['corpus' => '', 'version' => '', 'fromDoc' => '', 'toDoc' => '', 'opusLangpair' => $opusLangpair,
+        */
+        // echo("opusLangpairs = $opusLangpair");
+        $query = make_query(['corpus' => '', 'version' => '', 'fromDoc' => '', 'toDoc' => '',
+                             'opusLangpair' => $opusLangpair,
                              'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
                              'search' => '', 'fromDocQuery' => '']);
         echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$langpair.'</a> / ');
 
         if (sizeof($opusLangpairs) > 1){
             foreach ($opusLangpairs as $l){
-                if ($l != $opusLangpair){
-                    $query = make_query(['corpus' => '', 'version' => '', 'fromDoc' => '', 'toDoc' => '', 'opusLangpair' => $l,
+                if ($l == $opusLangpair)
+                    echo($l.' / ');
+                else{
+                    $query = make_query(['corpus' => '', 'version' => '', 'fromDoc' => '', 'toDoc' => '',
+                                         'opusLangpair' => $l,
                                          'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
                                          'search' => '', 'fromDocQuery' => '']);
                     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$l.'</a> / ');

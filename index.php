@@ -91,6 +91,7 @@ $fromDocQuery = filter_var(get_param('fromDocQuery',''),FILTER_SANITIZE_STRING);
 
 if ($srclang && $trglang){
     $bitext = new bitext($DB_DIR, $user, $corpus, $version, $langpair, $fromDoc, $toDoc, $opusLangpair, $showModified);
+    $opusLangpair = $bitext->opusLangpair;
 
     ## check whether we have a new rating to take care of
     
@@ -108,7 +109,7 @@ if ($srclang && $trglang){
 // content
 /////////////////////////////////////////////////////////////////
 
-print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc,$toDoc, $searchquery);
+print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc,$toDoc, $searchquery, $alignType);
 echo('</br><hr>');
 
 if ($searchquery){

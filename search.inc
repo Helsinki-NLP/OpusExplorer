@@ -153,7 +153,7 @@ function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $order
                                      'fromDoc' => $info['fromDoc'],
                                      'toDoc' => $info['toDoc'],
                                      'bitextID' => $bitextID,
-                                     'search' => '',
+                                     'search' => '','opusLangpair' => '',
                                      'offset' => 0]);
                 $hreftitle = implode('/',[$info['corpus'],$info['version'],$info['fromDoc']]);
 

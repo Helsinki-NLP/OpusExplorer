@@ -1,8 +1,9 @@
 <?php // -*-php-*-
 
 
+// $DB_DIR = '/media/OpusIndex/';
 // $DB_DIR = '/media/OPUS-MT/OpusIndex/';
-$DB_DIR = '/media/OpusIndex/';
+$DB_DIR = '/media/OPUS/OpusIndex/';
 
 $USER_DATADIR      = $DB_DIR;
 $USER_NAME_FILE    = $USER_DATADIR.'/users.php';
@@ -91,7 +92,7 @@ function delete_param($key){
 function get_langpair(){
     global $default_srclang, $default_trglang;
     if (isset($_GET['langpair'])){
-        list($srclang,$trglang) = explode('-',$_GET['langpair']);
+        list($srclang,$trglang) = $_GET['langpair'] ? explode('-',$_GET['langpair']) : array('','');
         $_SESSION['params']['src'] = $srclang;
         $_SESSION['params']['trg'] = $trglang;
     }
