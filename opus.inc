@@ -50,7 +50,7 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
         }
     
         if ($corpus && $version){
-            $query = make_query(['fromDoc' => '', 'toDoc' => '',
+            $query = make_query(['fromDoc' => '', 'toDoc' => '', 'offset' => 0,
                                  'search' => '', 'fromDocQuery' => '']);
 
             echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.' / '.$version.'</a> / ');
@@ -111,7 +111,8 @@ function print_document_list($bitext, $offset=0, $fromDocQuery='', $toDocQuery='
         echo("</tr>\n");
     }
     if ($count >= $showMaxDocuments || $fromDocQuery){
-        $queryValue = $fromDocQuery ? $fromDocQuery : $bitext->srclang.'/%';
+        // $queryValue = $fromDocQuery ? $fromDocQuery : $bitext->srclang.'/%';
+        $queryValue = $fromDocQuery ? $fromDocQuery : $bitext->opusSrclang.'/%';
         echo('<tr><td class="doclist"><form action="'.$_SERVER['PHP_SELF'].'" method="get" style="display: inline;">');
         echo('<input type="hidden" id="langpair" name="langpair" value="'.$bitext->langpair.'">');
         echo('<input type="hidden" id="offset" name="offset" value="0">');
