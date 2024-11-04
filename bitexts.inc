@@ -155,7 +155,7 @@ class bitext {
         return $alignments;
     }
 
-    public function search($query, $side, $bitextID, $limit=10, $offset=0, $orderByLinkID=0){
+    public function search($query, $side, $limit=10, $offset=0, $orderByLinkID=0){
         $alignments = new alignmentSearchResult($this, $this->index);
         $alignments->fetch($query,$side,$limit,$offset,$orderByLinkID);
         return $alignments;
