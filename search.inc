@@ -102,7 +102,7 @@ function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $order
     $toDoc = $bitext->toDoc;
     $bitextID = $bitext->id();
     
-    $alignments = $bitext->search($searchquery, $searchside, $bitextID, $limit, $offset, $orderByLinkID);
+    $alignments = $bitext->search($searchquery, $searchside, $limit, $offset, $orderByLinkID);
 
     search_navigation($searchquery, $offset, $limit);
     search_display_options($searchquery);

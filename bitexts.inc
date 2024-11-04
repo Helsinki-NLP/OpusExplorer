@@ -5,6 +5,7 @@ class bitext {
 
     protected $index;
     protected $user;
+    protected $corpusID;
     protected $bitextID;
     protected $fromDocID;
     protected $toDocID;
@@ -79,10 +80,26 @@ class bitext {
                                                         $this->version,
                                                         $this->fromDoc,
                                                         $this->toDoc);
-            set_param('bitextID',$id);
+            set_param('bitextID',$this->bitextID);
         }
         return $this->bitextID;
     }
+
+    public function corpusID(){
+        if ($this->corpusID) return $this->corpusID;
+        if ($corpusID = get_param('corpusID',0)){
+            $this->corpusID = $corpusID;
+        }
+        else{
+            $this->corpusID = $this->index->getCorpusID($this->corpus,
+                                                        $this->version,
+                                                        $this->opusSrclang,
+                                                        $this->opusTrglang);
+            set_param('corpusID',$this->corpusID);
+        }
+        return $this->corpusID;
+    }
+
     
     public function fromDocID(){
         if ($this->fromDocID) return $this->fromDocID;
@@ -140,7 +157,7 @@ class bitext {
 
     public function search($query, $side, $bitextID, $limit=10, $offset=0, $orderByLinkID=0){
         $alignments = new alignmentSearchResult($this, $this->index);
-        $alignments->fetch($query,$side,$bitextID,$limit,$offset,$orderByLinkID);
+        $alignments->fetch($query,$side,$limit,$offset,$orderByLinkID);
         return $alignments;
     }
 
@@ -321,9 +338,13 @@ class alignmentSearchResult extends alignments {
 
     private $searchside;
     
-    public function fetch($query, $side, $bitextID='',$limit=10, $offset=0, $orderByLinkID=0){
-        $this->searchResults = $this->index->searchAlignments($query, $side, $bitextID,
-                                                              $limit, $offset, $orderByLinkID);
+    public function fetch($query, $side, $limit=10, $offset=0, $orderByLinkID=0){
+        $this->searchResults = $this->index->searchAlignments($query, $side,
+                                                              $this->bitext->corpusID(),
+                                                              $this->bitext->id(),
+                                                              $this->bitext->opusSrclang,
+                                                              $this->bitext->opusTrglang,
+                                                              1, $limit, $offset, $orderByLinkID);
         $this->searchside = $side;
     }
 

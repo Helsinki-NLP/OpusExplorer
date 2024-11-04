@@ -62,6 +62,10 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
                 if (! $searchquery) bitext_browsing_links($bitext, $alignType);
             }
         }
+        else{
+            $corpusID = 0;
+            set_param('corpusID',0);
+        }            
         if (! $fromDoc || ! $toDoc){
             $bitextID = 0;
             set_param('bitextID',$bitextID);
@@ -185,7 +189,7 @@ function print_langpair_list(){
 
 function find_bitext_dbs($path){    
     $langpairs = array();
-    if ($handle = opendir($path.'/sqlite')) {
+    if ($handle = opendir($path.'/linkdb')) {
         while (false !== ($entry = readdir($handle))) {
             $parts = explode('.',$entry);
             if (array_pop($parts) == 'db'){
