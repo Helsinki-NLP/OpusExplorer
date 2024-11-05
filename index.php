@@ -83,6 +83,7 @@ $allowSortLinks = in_array($corpus, $ALLOW_EDIT);
 $orderByLinkID = get_param('sortLinkIDs',0);
 $searchquery = filter_var(get_param('search',''),FILTER_SANITIZE_STRING);
 $fromDocQuery = filter_var(get_param('fromDocQuery',''),FILTER_SANITIZE_STRING);
+$toDocQuery = filter_var(get_param('toDocQuery',''),FILTER_SANITIZE_STRING);
 
 
 /////////////////////////////////////////////////////////////////
@@ -123,7 +124,7 @@ elseif ($srclang && $trglang){
         if ($fromDoc && $toDoc){
             print_bitext($bitext, $alignType, $offset);
         }
-        else print_document_list($bitext, $offset, $fromDocQuery);
+        else print_document_list($bitext, $offset, $fromDocQuery, $toDocQuery);
     }
     else print_corpus_list($bitext);
 }

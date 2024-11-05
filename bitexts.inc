@@ -281,7 +281,6 @@ class documentPairs extends corpora{
     public function next(){
         if ($this->searchResults){
             if ($docpair = $this->searchResults->fetchArray(SQLITE3_ASSOC)){
-                $docpair['bitextID'] = $docpair['rowid'];
                 return $docpair;
             }
         }
@@ -670,6 +669,13 @@ function print_vertical_bitext_table($alignments,
     echo('<table class="bitext">');
     
     echo("<tr><th>source<br/>target</th><th>$fromDoc<br/>$toDoc</th>");
+    /*
+    echo("<tr><th>source<br/>target</th><th>$fromDoc");
+    print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
+    echo("<br/>$toDoc");
+    print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
+    echo('</th>');
+    */
     if ($showScores){
         if ($showLengthRatio) echo('<th>score<br/>ratio</th>');
         else echo('<th>score<br/>&nbsp;</th>');
