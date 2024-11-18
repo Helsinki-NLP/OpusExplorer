@@ -3,7 +3,8 @@
 
 function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc,$toDoc,$searchquery,$alignType){
     global $bitext, $bitextID, $opusLangpair;
-    
+
+    echo '<form action="index.php" method="get" style="padding: 0px;margin: 0px;">';
     $query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '', 'opusLangpair' => '',
                          'corpus' => '', 'version' => '', 'fromDoc' => '', 'toDoc' => '',
                          'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
@@ -12,23 +13,7 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
 
     if ($srclang && $trglang){
 
-        // $opusLangpairs = $corpus ? array() : $bitext->opusLangpairs($corpus,$version,$srclang,$trglang);
-        // $opusLangpairs = $bitext->opusLangpairs($corpus,$version,$srclang,$trglang);
         $opusLangpairs = $bitext->opusLangpairs;
-        // asort($opusLangpairs);
-        /*
-        if (sizeof($opusLangpairs)){
-            if ((! $opusLangpair) && sizeof($opusLangpairs)){
-                $opusLangpair = $opusLangpairs[0];
-                set_param('opusLangpair',$opusLangpair);
-            }
-            elseif (! in_array($opusLangpair,$opusLangpairs)){
-                $opusLangpair = $opusLangpairs[0];
-                set_param('opusLangpair',$opusLangpair);
-            }
-        }
-        */
-        // echo("opusLangpairs = $opusLangpair");
         $query = make_query(['corpus' => '', 'version' => '', 'fromDoc' => '', 'toDoc' => '',
                              'opusLangpair' => $opusLangpair,
                              'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
@@ -48,18 +33,23 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
                 }
             }
         }
-    
-        if ($corpus && $version){
-            $query = make_query(['fromDoc' => '', 'toDoc' => '', 'offset' => 0,
-                                 'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
 
-            echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.' / '.$version.'</a> / ');
-        
-            if ($fromDoc && $toDoc){
-                $query = make_query(['aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
+        if ($corpus){
+            $query = make_query(['version' => '', 'fromDoc' => '', 'toDoc' => '', 'offset' => 0,
+                                 'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
+            echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.'</a> / ');
+
+            if ($version){
+                $query = make_query(['fromDoc' => '', 'toDoc' => '', 'offset' => 0,
                                      'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
-                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$fromDoc.'</a> / ');
-                if (! $searchquery) bitext_browsing_links($bitext, $alignType);
+                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$version.'</a> / ');
+        
+                if ($fromDoc && $toDoc){
+                    $query = make_query(['aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
+                                         'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
+                    echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$fromDoc.'</a> / ');
+                    if (! $searchquery) bitext_browsing_links($bitext, $alignType);
+                }
             }
         }
         else{
@@ -71,7 +61,31 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
             set_param('bitextID',$bitextID);
             print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $searchquery);
         }
-    }    
+    }
+    elseif ($corpus && $version){
+        $query = make_query(['version' => '', 'fromDoc' => '', 'toDoc' => '', 'offset' => 0,
+                             'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
+        echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.'</a> / ');
+        $query = make_query(['fromDoc' => '', 'toDoc' => '', 'offset' => 0,
+                             'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
+        echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$version.'</a> / ');
+    }
+    else{
+        $latest = 1;
+        $corpora = $bitext->corpora($latest);
+        echo '<input type="hidden" id="showLatest" name="showLatest" value="1">';
+        echo '<select name="corpus" id="corpus" onchange="this.form.submit()">';
+        echo('<option value=""> -- select corpus -- </option>');
+
+        while ($row = $corpora->next()) {
+            if ($corpus && $corpus == $row['corpus'])
+                echo('<option selected value="'.$row['corpus'].'">'.$row['corpus'].'</option>');
+            else
+                echo('<option value="'.$row['corpus'].'">'.$row['corpus'].'</option>');
+        }
+        echo '</select>';
+    }
+    echo '</form>';
 }
 
 
@@ -167,7 +181,7 @@ function print_document_list($bitext, $offset=0, $fromDocQuery='', $toDocQuery='
 
 
 function print_corpus_list($bitext){
-    $corpora = $bitext->corpora();
+    $corpora = $bitext->releases();
     $corpus = '';
     $versions = array();
     $link = '';
@@ -193,12 +207,26 @@ function print_corpus_list($bitext){
     echo('</ul>');
 }
 
-function print_langpair_list(){
-    global $DB_DIR;
+
+function print_langpairs($bitext, $langpairView='list'){
+
+    $langpairs = find_bitext_dbs($bitext);    
+    if ( ($langpairView == 'matrix') && count($langpairs)>4 ){
+        return print_langpair_matrix($langpairs);
+    }
+    return print_langpair_list($langpairs);
+}
+
+function print_langpair_list($langpairs){
     
     // $langpairs = array('fi-uk');
-    $langpairs = find_bitext_dbs($DB_DIR);
     ksort($langpairs);
+
+    if (count($langpairs)>4){
+        echo('list view / ');
+        $query = make_query(['langpairView' => 'matrix']);
+        echo '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">matrix view</a><br/>';
+    }
 
     echo('<ul>');
     foreach ($langpairs as $langpair => $val){
@@ -219,15 +247,85 @@ function print_langpair_list(){
 }
 
 
-function find_bitext_dbs($path){    
+function print_langpair_matrix($langpairs){
+
+    $langmatrix = array();
+    $srclangs = array();
+    $trglangs = array();
+
+    foreach ($langpairs as $langpair => $val){
+        list($srclang,$trglang) = explode('-',$langpair);
+        $srclangs[$srclang]++;
+        $trglangs[$trglang]++;
+    }
+    
+    ksort($srclangs);
+    ksort($trglangs);
+
+
+    if (count($langpairs)>4){
+        $query = make_query(['langpairView' => 'list']);
+        echo '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">list view</a>';
+        echo(' / matrix view<br/><br/>');
+    }
+    
+    echo('<table><tr><th></th>');
+    foreach ($trglangs as $trglang => $count){
+        $trglangname = Locale::getDisplayName($trglang, 'en');
+        $trglangs[$trglang] = $trglangname;
+        // echo('<th>'.$trglangname.'</th>');
+        echo('<th>'.$trglang.'</th>');
+    }
+    echo('</tr>');
+    foreach ($srclangs as $srclang => $srccount){
+        $srclangname = Locale::getDisplayName($srclang, 'en');
+        // echo('<tr><th>'.$srclangname.'</th>');
+        echo('<tr><th>'.$srclang.'</th>');
+        foreach ($trglangs as $trglang => $trglangname){
+            $langpair = "$srclang-$trglang";
+            if (array_key_exists($langpair,$langpairs)){
+                $query = make_query(['langpair' => $langpair, 'search' => '']);
+                echo '<td><a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">';
+                // echo $langpair;
+                echo 'index</a></td>'."\n";
+            }
+            else{
+                echo('<td></td>');
+            }
+        }
+        echo('</tr>');
+    }
+    echo('</table>');
+}
+
+
+function find_bitext_dbs($bitext){
+    global $DB_DIR;
+
+    $indexLangpairs = $bitext->langpairs();
     $langpairs = array();
-    if ($handle = opendir($path.'/linkdb')) {
+    foreach ($indexLangpairs as $lp){
+        if (file_exists($DB_DIR.'/linkdb/'.$lp.'.db')){
+            list($srclang,$trglang) = explode('-',$lp);
+            if (file_exists($DB_DIR.'/'.$srclang.'.fts5.db'))
+                if (file_exists($DB_DIR.'/'.$trglang.'.fts5.db'))
+                    $langpairs[$lp] = true;
+        }
+    }
+    return $langpairs;
+    
+    
+    $langpairs = array();
+    if ($handle = opendir($DB_DIR.'/linkdb')) {
         while (false !== ($entry = readdir($handle))) {
             $parts = explode('.',$entry);
             if (array_pop($parts) == 'db'){
                 if (count($parts) == 1){
-                    if (count(explode('-',$parts[0])) == 2){
-                        $langpairs[$parts[0]] = true;
+                    $langs = explode('-',$parts[0]);
+                    if (count($langs) == 2){
+                        if (file_exists($DB_DIR.'/'.$langs[0].'.fts5.db'))
+                            if (file_exists($DB_DIR.'/'.$langs[1].'.fts5.db'))
+                                $langpairs[$parts[0]] = true;
                     }
                 }
             }
@@ -235,7 +333,7 @@ function find_bitext_dbs($path){
         closedir($handle);
     }
     /*
-    if ($handle = opendir($path)) {
+    if ($handle = opendir($DB_DIR)) {
         while (false !== ($entry = readdir($handle))) {
             $parts = explode('.',$entry);
             if (array_pop($parts) == 'db'){
@@ -248,7 +346,7 @@ function find_bitext_dbs($path){
         }
         closedir($handle);
     }
-    if ($handle = opendir($path.'/sqlite')) {
+    if ($handle = opendir($DB_DIR.'/sqlite')) {
         while (false !== ($entry = readdir($handle))) {
             if (substr($entry,-10) == '.linked.db') {
                 $lang = basename($entry,'.linked.db');

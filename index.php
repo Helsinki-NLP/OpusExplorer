@@ -63,12 +63,15 @@ $showLengthRatio = get_param('showLengthRatio',0);
 $showRatings = get_param('showRatings',0);
 $showMyRatings = get_param('showMyRatings',1);
 $showModified = get_param('showModified',1);
+// $showLatest = get_param('showLatest',0);
 
 $showMaxAlignments = get_param('showMaxAlignments',$SHOW_ALIGNMENTS_LIMIT);
 $showMaxDocuments = get_param('showMaxDocuments',$DOCUMENT_LIST_LIMIT);
 
 $tableStyle = get_param('style','horizontal');
 if ($tableStyle == 'edit') $showModified=1;
+
+$langpairView = get_param('langpairView','list');
 
 
 ## special permissions for document-level corpora (sentences in context):
@@ -90,8 +93,13 @@ $toDocQuery = filter_var(get_param('toDocQuery',''),FILTER_SANITIZE_STRING);
 // create the bitext object and handle ratings
 /////////////////////////////////////////////////////////////////
 
+$bitext = new bitext($DB_DIR, $user, $corpus, $version, $langpair, $fromDoc, $toDoc, $opusLangpair,
+                     $showModified, $showLatest);
+// $version = $bitext->version;
+
+
 if ($srclang && $trglang){
-    $bitext = new bitext($DB_DIR, $user, $corpus, $version, $langpair, $fromDoc, $toDoc, $opusLangpair, $showModified);
+
     $opusLangpair = $bitext->opusLangpair;
 
     ## check whether we have a new rating to take care of
@@ -128,6 +136,6 @@ elseif ($srclang && $trglang){
     }
     else print_corpus_list($bitext);
 }
-else print_langpair_list();
+else print_langpairs($bitext, $langpairView);
 
 ?>

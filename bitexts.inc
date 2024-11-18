@@ -24,7 +24,8 @@ class bitext {
     public $opusTrglang;
 
 
-    function __construct($indexDir, $user, $corpus, $version, $langpair, $fromDoc, $toDoc, $opusLangpair='', $showUserData=1) {
+    function __construct($indexDir, $user, $corpus, $version, $langpair, $fromDoc, $toDoc, $opusLangpair='',
+                         $showUserData=1, $showLatest=0) {
         $this->corpus = $corpus;
         $this->version = $version;
         $this->langpair = $langpair;
@@ -39,10 +40,21 @@ class bitext {
             $this->trglang = $trglang;
         }
 
-        $this->index = new opusindex($indexDir, $user, $srclang, $trglang, $corpus, $version, $fromDoc ,$toDoc, $opusLangpair);
+        $this->index = new opusindex($indexDir, $user, $srclang, $trglang,
+                                     $corpus, $version,
+                                     $fromDoc ,$toDoc, $opusLangpair);
         if ($fromDoc && $toDoc){
             $bitextID=$this->id();
             if ($showUserData && $bitextID) $this->index->openUserDB($bitextID);
+        }
+        
+        // set version to latest version if not specified and showLatest is activated
+        if ($corpus && ! $version && $showLatest){
+            $releases = $this->releases(1);
+            if ($release = $releases->next()){
+                $version = $release['version'];
+                $this->version = $version;
+            }
         }
 
         // find all OPUS language pairs that exist for the selected srclang-trglang pair
@@ -53,11 +65,13 @@ class bitext {
         if (sizeof($this->opusLangpairs)){
             if (! $opusLangpair){
                 $this->opusLangpair = $this->opusLangpairs[0];
-                $this->index->setLinkDb($indexDir,$srclang,$trglang,$corpus,$version,$fromDoc,$toDoc,$opusLangpair);
+                $this->index->setLinkDb($indexDir,$srclang,$trglang,$corpus,$version,
+                                        $fromDoc,$toDoc,$opusLangpair);
             }
             elseif (! in_array($opusLangpair,$this->opusLangpairs)){
                 $this->opusLangpair = $this->opusLangpairs[0];
-                $this->index->setLinkDb($indexDir,$srclang,$trglang,$corpus,$version,$fromDoc,$toDoc,$opusLangpair);
+                $this->index->setLinkDb($indexDir,$srclang,$trglang,$corpus,$version,
+                                        $fromDoc,$toDoc,$opusLangpair);
             }
             else{
                 $this->opusLangpair = $opusLangpair;
@@ -123,17 +137,28 @@ class bitext {
         return $this->index->getBitext($bitextID);
     }
 
-    public function corpora(){
+
+    public function corpora($latest=0){
         $corpora = new corpora($this, $this->index);
-        $corpora->fetch();
+        $corpora->fetch($latest);
         return $corpora;        
     }
 
-    /*
-    public function opusLangpairs(){
-        return $this->index->getOpusLangpairs($this->corpus, $this->version, $this->srclang, $this->trglang);
+    public function releases($latest=0){
+        $corpora = new corpusReleases($this, $this->index);
+        $corpora->fetch($latest);
+        return $corpora;        
     }
-    */
+
+    public function langpairs(){
+        return $this->index->getLangpairs($this->corpus, $this->version,
+                                          $this->opusSrclang, $this->opusTrglang);
+    }
+
+    public function opusLangpairs(){
+        return $this->index->getOpusLangpairs($this->corpus, $this->version,
+                                              $this->srclang, $this->trglang);
+    }
             
     public function documents($offset=0, $limit=10, $fromDocQuery='', $toDocQuery=''){
         $docpairs = new documentPairs($this, $this->index);
@@ -249,10 +274,36 @@ class corpora {
         $this->bitext = $bitext;
         $this->index = $index;
     }
-    public function fetch(){
+    public function fetch($latest=0){
         $this->searchResults = $this->index->getCorpora($this->bitext->corpus, $this->bitext->version,
                                                         $this->bitext->srclang, $this->bitext->trglang,
-                                                        $this->bitext->opusSrclang, $this->bitext->opusTrglang);
+                                                        $this->bitext->opusSrclang, $this->bitext->opusTrglang,
+                                                        $latest);
+    }
+    public function next(){
+        if ($this->searchResults)
+            return $this->searchResults->fetchArray(SQLITE3_ASSOC);
+        return false;
+    }
+
+}
+
+
+class corpusReleases extends corpora{
+    
+    public $bitext;
+    protected $index;
+    protected $searchResult;
+
+    function __construct($bitext,$index){
+        $this->bitext = $bitext;
+        $this->index = $index;
+    }
+    public function fetch($latest=0){
+        $this->searchResults = $this->index->getCorpusReleases($this->bitext->corpus, $this->bitext->version,
+                                                               $this->bitext->srclang, $this->bitext->trglang,
+                                                               $this->bitext->opusSrclang, $this->bitext->opusTrglang,
+                                                               $latest);
     }
     public function next(){
         if ($this->searchResults)
