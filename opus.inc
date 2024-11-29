@@ -78,10 +78,12 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
         echo('<option value=""> -- select corpus -- </option>');
 
         while ($row = $corpora->next()) {
-            if ($corpus && $corpus == $row['corpus'])
-                echo('<option selected value="'.$row['corpus'].'">'.$row['corpus'].'</option>');
-            else
-                echo('<option value="'.$row['corpus'].'">'.$row['corpus'].'</option>');
+            if (substr( $row['corpus'], 0, 4 ) != "ELRA")
+                if (substr( $row['corpus'], 0, 4 ) != "ELRC")
+                    if ($corpus && $corpus == $row['corpus'])
+                        echo('<option selected value="'.$row['corpus'].'">'.$row['corpus'].'</option>');
+                    else
+                        echo('<option value="'.$row['corpus'].'">'.$row['corpus'].'</option>');
         }
         echo '</select>';
     }
@@ -181,6 +183,17 @@ function print_document_list($bitext, $offset=0, $fromDocQuery='', $toDocQuery='
 
 
 function print_corpus_list($bitext){
+
+    echo 'corpus list / ';
+    $query = make_query(['srclang' => '', 'trglang' => '',
+                         'langpair' => '', 'opusLangpair' => '',
+                         'resourceView' => 'langList']);
+    echo '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">language list</a> / ';
+    $query = make_query(['srclang' => '', 'trglang' => '',
+                         'langpair' => '', 'opusLangpair' => '',
+                         'resourceView' => 'langMatrix']);
+    echo '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">language matrix</a><br/>';
+    
     $corpora = $bitext->releases();
     $corpus = '';
     $versions = array();
@@ -197,7 +210,7 @@ function print_corpus_list($bitext){
         }
         array_push($versions,$row['version']);
         $version = $row['version'];
-        $query = make_query(['corpus' => $corpus, 'version' => $version, 'search' => '']);
+        $query = make_query(['corpus' => $corpus, 'version' => $version, 'search' => '', 'resourceView' => 'langMatrix']);
         $link = '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">';
         $versionLinks .= ' ['.$link.$version.'</a>]';
     }
@@ -208,10 +221,13 @@ function print_corpus_list($bitext){
 }
 
 
-function print_langpairs($bitext, $langpairView='list'){
+function print_langpairs($bitext, $resourceView='langList'){
 
+    $query = make_query(['resourceView' => 'corpusList', 'version' => '']);
+    echo '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">corpus list</a> / ';
+    
     $langpairs = find_bitext_dbs($bitext);    
-    if ( ($langpairView == 'matrix') && count($langpairs)>4 ){
+    if ( ($resourceView == 'langMatrix') && count($langpairs)>4 ){
         return print_langpair_matrix($langpairs);
     }
     return print_langpair_list($langpairs);
@@ -223,9 +239,9 @@ function print_langpair_list($langpairs){
     ksort($langpairs);
 
     if (count($langpairs)>4){
-        echo('list view / ');
-        $query = make_query(['langpairView' => 'matrix']);
-        echo '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">matrix view</a><br/>';
+        echo('language list / ');
+        $query = make_query(['resourceView' => 'langMatrix']);
+        echo '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">language matrix</a><br/>';
     }
 
     echo('<ul>');
@@ -264,9 +280,9 @@ function print_langpair_matrix($langpairs){
 
 
     if (count($langpairs)>4){
-        $query = make_query(['langpairView' => 'list']);
-        echo '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">list view</a>';
-        echo(' / matrix view<br/><br/>');
+        $query = make_query(['resourceView' => 'langList']);
+        echo '<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">language list</a>';
+        echo(' / language matrix<br/><br/>');
     }
     
     echo('<table><tr><th></th>');

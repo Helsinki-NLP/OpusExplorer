@@ -151,6 +151,7 @@ class bitext {
     }
 
     public function langpairs(){
+        # return $this->index->getLangpairs($this->corpus, $this->version);
         return $this->index->getLangpairs($this->corpus, $this->version,
                                           $this->opusSrclang, $this->opusTrglang);
     }

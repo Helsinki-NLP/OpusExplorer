@@ -26,7 +26,7 @@ download-required-fts-dbs: ${REQUIRED_FTSDB_FILES}
 ${DB_HOME}/linkdb/%.db %.fts5.db:
 	wget -q -O $@ ${DB_STORAGE}/$(patsubst ${DB_HOME}/%,%,$@)
 
-${DB_HOME}/linkdb/%.redownload:
+${DB_HOME}/linkdb/%.redownload ${DB_HOME}/%.fts5.redownload:
 	wget -q -O $(@:.redownload=.db) ${DB_STORAGE}/$(patsubst ${DB_HOME}/%.redownload,%.db,$@)
 
 

@@ -71,7 +71,8 @@ $showMaxDocuments = get_param('showMaxDocuments',$DOCUMENT_LIST_LIMIT);
 $tableStyle = get_param('style','horizontal');
 if ($tableStyle == 'edit') $showModified=1;
 
-$langpairView = get_param('langpairView','list');
+// $resourceView = get_param('resourceView','langList');
+$resourceView = get_param('resourceView','langMatrix');
 
 
 ## special permissions for document-level corpora (sentences in context):
@@ -129,13 +130,12 @@ if ($searchquery){
 }
 elseif ($srclang && $trglang){
     if ($corpus && $version){
-        if ($fromDoc && $toDoc){
-            print_bitext($bitext, $alignType, $offset);
-        }
+        if ($fromDoc && $toDoc) print_bitext($bitext, $alignType, $offset);
         else print_document_list($bitext, $offset, $fromDocQuery, $toDocQuery);
     }
     else print_corpus_list($bitext);
 }
-else print_langpairs($bitext, $langpairView);
+elseif ($resourceView == 'corpusList') print_corpus_list($bitext);
+else print_langpairs($bitext, $resourceView);
 
 ?>
