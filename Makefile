@@ -25,9 +25,11 @@ download-required-fts-dbs: ${REQUIRED_FTSDB_FILES}
 
 
 ${DB_HOME}/linkdb/%.db %.fts5.db:
+	mkdir -p $(dir $@)
 	wget -q -O $@ ${DB_STORAGE}/$(patsubst ${DB_HOME}/%,%,$@)
 
 ${DB_HOME}/linkdb/%.redownload ${DB_HOME}/%.fts5.redownload:
+	mkdir -p $(dir $@)
 	wget -q -O $(@:.redownload=.db) ${DB_STORAGE}/$(patsubst ${DB_HOME}/%.redownload,%.db,$@)
 
 
@@ -46,6 +48,7 @@ INSERT_INTO         := INSERT OR IGNORE INTO
 bitext-db: ${DB_HOME}/linkdb/bitexts.db
 
 ${DB_HOME}/linkdb/bitexts.db: ${LANGPAIR_DBS}
+	mkdir -p $(dir $@)
 	echo "${CREATE_TABLE} bitexts (bitextID,corpus TEXT,version TEXT,fromDoc TEXT,toDoc TEXT)" | sqlite3 $@
 	echo "${CREATE_UNIQUE_INDEX} idx_bitexts ON bitexts (corpus,version,fromDoc,toDoc)" | sqlite3 $@
 	echo "${CREATE_UNIQUE_INDEX} idx_bitext_ids ON bitexts (bitextID)" | sqlite3 $@
