@@ -672,8 +672,8 @@ function print_horizontal_bitext_table($alignments,
             echo("</td><td bgcolor='$color' class='centeralign'>$score");
         }
         if ($showLengthRatio){
-            $srcLen = strlen($srcText);
-            $trgLen = strlen($trgText);
+            $srcLen = mb_strlen($srcText);
+            $trgLen = mb_strlen($trgText);
             $ratio = 0;
             if ($srcLen or $trgLen){
                 $ratio = $srcLen > $trgLen ? $trgLen / $srcLen : $srcLen / $trgLen;
@@ -757,8 +757,8 @@ function print_vertical_bitext_table($alignments,
             $scoreColor = score_color($score);
         }
         if ($showLengthRatio){
-            $srcLen = strlen($srcText);
-            $trgLen = strlen($trgText);
+            $srcLen = mb_strlen($srcText);
+            $trgLen = mb_strlen($trgText);
             $ratio = 0;
             if ($srcLen or $trgLen){
                 $ratio = $srcLen > $trgLen ? $trgLen / $srcLen : $srcLen / $trgLen;
@@ -934,8 +934,8 @@ function print_editable_bitext_table($alignments,
             echo("<td bgcolor='$color' class='centeralign'>$score</td>");
         }
         if ($showLengthRatio){
-            $srcLen = strlen($srcText);
-            $trgLen = strlen($trgText);
+            $srcLen = mb_strlen($srcText);
+            $trgLen = mb_strlen($trgText);
             $ratio = 0;
             if ($srcLen or $trgLen){
                 $ratio = $srcLen > $trgLen ? $trgLen / $srcLen : $srcLen / $trgLen;
