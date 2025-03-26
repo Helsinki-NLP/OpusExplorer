@@ -2,9 +2,10 @@
 
 DB_STORAGE := https://object.pouta.csc.fi/synOPUS-index
 DB_HOME    := /media/OPUS/synOpusIndex
+GIT_HOME   := https://raw.githubusercontent.com/Helsinki-NLP/synOpusIndex/refs/heads/master
 
-
-AVAILABLE_LINKDB_FILES := $(patsubst %,${DB_HOME}/%,$(shell wget -qq -O - ${DB_STORAGE}/index.txt | grep 'linkdb/*\.db'))
+# AVAILABLE_LINKDB_FILES := $(patsubst %,${DB_HOME}/%,$(shell wget -qq -O - ${DB_STORAGE}/index.txt | grep 'linkdb/*\.db'))
+AVAILABLE_LINKDB_FILES := $(patsubst %,${DB_HOME}/%,$(shell wget -qq -O - ${GIT_HOME}/index.txt | grep 'linkdb/*\.db'))
 INSTALLED_LINKDB_FILES := $(wildcard ${DB_HOME}/linkdb/*.db)
 REQUIRED_FTSDB_FILES   := $(patsubst %,${DB_HOME}/%.fts5.db,\
 				$(sort $(subst -, ,$(patsubst ${DB_HOME}/linkdb/%.db,%,${INSTALLED_LINKDB_FILES}))))
