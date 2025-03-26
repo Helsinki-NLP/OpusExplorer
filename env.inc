@@ -3,7 +3,8 @@
 
 // $DB_DIR = '/media/OpusIndex/';
 // $DB_DIR = '/media/OPUS-MT/OpusIndex/';
-$DB_DIR = '/media/OPUS/OpusIndex/';
+// $DB_DIR = '/media/OPUS/OpusIndex/';
+$DB_DIR = '/media/OPUS/synOpusIndex/';
 
 $USER_DATADIR      = $DB_DIR;
 $USER_NAME_FILE    = $USER_DATADIR.'/users.php';

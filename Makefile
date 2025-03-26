@@ -1,7 +1,7 @@
 
 
-DB_STORAGE := https://object.pouta.csc.fi/OPUS-index
-DB_HOME    := /media/OPUS/OpusIndex
+DB_STORAGE := https://object.pouta.csc.fi/synOPUS-index
+DB_HOME    := /media/OPUS/synOpusIndex
 
 
 AVAILABLE_LINKDB_FILES := $(patsubst %,${DB_HOME}/%,$(shell wget -qq -O - ${DB_STORAGE}/index.txt | grep 'linkdb/*\.db'))
