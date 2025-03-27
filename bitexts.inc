@@ -642,7 +642,7 @@ function print_horizontal_bitext_table($alignments,
 
     global $langpair, $showModified;
     
-    echo('<table class="bitext">');
+    echo('<p><table class="bitext">');
     echo("<tr><th>IDs</th>");
     echo("<th style='text-align: right;'>".$fromDoc);
     print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
@@ -703,7 +703,7 @@ function print_horizontal_bitext_table($alignments,
             
         echo('</td></tr>'."\n");
     }
-    echo('</table>');
+    echo('</table></p>');
     return $i;
 }
 
@@ -718,9 +718,9 @@ function print_vertical_bitext_table($alignments,
     $bitextID = $bitext->id();
 
     
-    echo('<table class="bitext">');
+    echo('<p><table class="vbitext">');
     
-    echo("<tr><th>source<br/>target</th><th>$fromDoc<br/>$toDoc</th>");
+    echo("<tr><th class='bitext'>source<br/>target</th><th>$fromDoc<br/>$toDoc</th>");
     /*
     echo("<tr><th>source<br/>target</th><th>$fromDoc");
     print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
@@ -794,7 +794,7 @@ function print_vertical_bitext_table($alignments,
         // target language row
         
         echo('<tr class="bitexttrg"><td class="centeralign">');
-        echo(implode('&nbsp;',$row['trgIDs']).'</td><td class="bitexttrg">');
+        echo(implode('&nbsp;',$row['trgIDs']).'</td><td>');
         echo($trgText);
 
         if ($showLengthRatio)
@@ -813,10 +813,10 @@ function print_vertical_bitext_table($alignments,
                 echo("</td><td>");
             }
         }
-        echo("</td></tr>");
+        echo('</td></tr><tr class="bitextspace"><td class="bitextspace"></td></tr>');
 
     }
-    echo('</table>');
+    echo('</table></p>');
     return $i;
 }
 

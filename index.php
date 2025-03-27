@@ -6,6 +6,14 @@ if (isset($_GET['logout'])){
     unset($_SESSION['user']);
 }
 
+
+# add those lines to experiment with different css styles
+#
+#  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+#  <meta http-equiv="Pragma" content="no-cache" />
+#  <meta http-equiv="Expires" content="0" />
+
+
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 
@@ -13,7 +21,7 @@ if (isset($_GET['logout'])){
 <head>
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="viewport" content="width=device-width, initial-scale=1"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="index.css" type="text/css">
   <script type="text/javascript">
 	function setStyle(obj,style,value){

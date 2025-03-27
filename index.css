@@ -22,17 +22,87 @@ td.segment-trg {text-align: left; border: none;}
 td.leftalign   {text-align: left;width: 40%;padding-left: 10px;}
 td.rightalign  {text-align: right;width: 40%;padding-right: 10px;}
 td.centeralign  {text-align: center;}
-table, th {
-  border: 2px solid;
+table {
   border-collapse: collapse;
+}
+th {
+    border: none;
 }
 td {
   border: 1px dotted;
   padding-left: 5px;
   padding-right: 5px;
 }
+
+table.vertical-bitext {
+  border-collapse: inherit;
+  border-spacing: 0 10px;
+}
+
+th.vertical-bitext {
+    width: 100%;
+    border: 2px solid;
+    border-collapse: collapse;
+    border-spacing: 0 0;
+}
+
+
+th.bitext   {
+    border: none;
+}
+
 tr.bitextsrc   {
     border-top: 2px solid;
+    border-left: 2px solid;
+    border-right: 2px solid;
     background-color: #eeeeee;
 }
-tr.bitexttrg   { border-bottom: 1px solid solid;}
+tr.bitexttrg   {
+    border-bottom: 2px solid;
+    border-left: 2px solid;
+    border-right: 2px solid;
+}
+
+tr.bitextspace   {
+    border-bottom: 2px solid;
+}
+td.bitextspace   {
+    border: none;
+    padding: 10px;
+}
+
+
+table.vbitext {
+    border: none;
+    border-collapse: collapse;
+}
+
+
+tr.vbitext-src {
+    border-top: 20px solid;
+    border-color: white;
+}
+
+tr.vbitext-trg {
+    border-bottom: 20px solid;
+    border-color: white;
+}
+
+th.vbitext {
+    border: 2px solid;
+}
+
+td.vbitext-src {
+    border-top: 2px solid;
+    border-bottom: 1px dotted;
+    border-left: 1px dotted;
+    border-right: 1px dotted;
+    background-color: #eeeeee;
+}
+
+td.vbitext-trg {
+    border-top: 1px dotted;
+    border-bottom: 2px solid;
+    border-left: 1px dotted;
+    border-right: 1px dotted;
+}
