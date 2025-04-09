@@ -1,6 +1,9 @@
 
-div.rightalign  {text-align: right; float: right; display: inline;}
+a:link {
+  text-decoration: none;
+}
 
+div.rightalign  {text-align: right; float: right; display: inline;}
 
 table.login     {border: none;}
 td.login        {border: none;}
@@ -64,11 +67,12 @@ tr.bitexttrg   {
 }
 
 tr.bitextspace   {
-    border-bottom: 2px solid;
+    border: none;
 }
 td.bitextspace   {
     border: none;
-    padding: 10px;
+    padding-top: 10px;
+    padding-bottom: 30px;
 }
 
 
@@ -105,4 +109,43 @@ td.vbitext-trg {
     border-bottom: 2px solid;
     border-left: 1px dotted;
     border-right: 1px dotted;
+}
+
+
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 15px;
+  border-radius: 5px;  
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%; 
+  background: #04AA6D;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #04AA6D;
+  cursor: pointer;
+}
+
+
+a.black:link, a.black:visited {
+  background-color: white;
+  color: black;
+  text-align: center;
+  text-decoration: none;
 }

@@ -22,7 +22,7 @@ if (isset($_GET['logout'])){
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="index.css" type="text/css">
+  <link rel="stylesheet" href="index.css?v17" type="text/css">
   <script type="text/javascript">
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
@@ -41,12 +41,13 @@ include('ratings.inc');
 include('search.inc');
 
 
-echo('<h1>OpusExplorer</h1>');
+
 
 if (!logged_in()){
 	exit;
 }
 echo('<div class="rightalign"><a href="help.php">[help]</a><a href="index.php?logout">[logout]</a></div>');
+echo('<h1>OpusExplorer</h1>');
 
 list($srclang, $trglang, $langpair) = get_langpair();
 $opusLangpair = get_param('opusLangpair');
@@ -67,7 +68,7 @@ $showEmpty = get_param('showEmpty',1);
 if ($alignType == '0-1' || $alignType == '1-0') $showEmpty=1;
 
 $showScores = get_param('showScores',1);
-$showLengthRatio = get_param('showLengthRatio',0);
+$showLengthRatio = get_param('showLengthRatio',1);
 $showRatings = get_param('showRatings',0);
 $showMyRatings = get_param('showMyRatings',1);
 $showModified = get_param('showModified',1);
@@ -76,7 +77,8 @@ $showModified = get_param('showModified',1);
 $showMaxAlignments = get_param('showMaxAlignments',$SHOW_ALIGNMENTS_LIMIT);
 $showMaxDocuments = get_param('showMaxDocuments',$DOCUMENT_LIST_LIMIT);
 
-$tableStyle = get_param('style','horizontal');
+// $tableStyle = get_param('style','horizontal');
+$tableStyle = get_param('style','vertical');
 if ($tableStyle == 'edit') $showModified=1;
 
 // $resourceView = get_param('resourceView','langList');
@@ -88,7 +90,8 @@ $resourceView = get_param('resourceView','langMatrix');
 ## - allow to sort by link ID
 ## - allow to search for other alignment types (expensive search for large doc's!)
 
-$allowEdit = in_array($corpus, $ALLOW_EDIT);
+// $allowEdit = in_array($corpus, $ALLOW_EDIT);
+$allowEdit = 0;
 $allowOtherAlignTypes = in_array($corpus, $ALLOW_EDIT);
 $allowSortLinks = in_array($corpus, $ALLOW_EDIT);
 
@@ -128,7 +131,7 @@ if ($srclang && $trglang){
 /////////////////////////////////////////////////////////////////
 
 print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc,$toDoc, $searchquery, $alignType);
-echo('</br><hr>');
+// echo('</br><hr>');
 
 if ($searchquery){
     $searchlimit = get_param('limit',10);
@@ -139,11 +142,23 @@ if ($searchquery){
 elseif ($srclang && $trglang){
     if ($corpus && $version){
         if ($fromDoc && $toDoc) print_bitext($bitext, $alignType, $offset);
-        else print_document_list($bitext, $offset, $fromDocQuery, $toDocQuery);
+        else{
+            echo('</br><hr>');
+            print_document_list($bitext, $offset, $fromDocQuery, $toDocQuery);
+        }
     }
-    else print_corpus_list($bitext);
+    else{
+        echo('</br><hr>');
+        print_corpus_list($bitext);
+    }
 }
-elseif ($resourceView == 'corpusList') print_corpus_list($bitext);
-else print_langpairs($bitext, $resourceView);
+elseif ($resourceView == 'corpusList'){
+    echo('</br><hr>');
+    print_corpus_list($bitext);
+}
+else{
+    echo('</br><hr>');
+    print_langpairs($bitext, $resourceView);
+}
 
 ?>

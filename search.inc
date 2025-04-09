@@ -34,14 +34,14 @@ function search_navigation($searchquery, $offset, $showMaxAlignments){
 
     if ($offset){
         $query = make_query(['search' => $searchquery, 'offset' => 0]);
-        echo('<a id="prev" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">start</a>');
+        echo('&nbsp;&nbsp;/ <a id="prev" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">start</a>');
         $previous = $offset - $showMaxAlignments;
         if ($previous < 0){ $previous = 0; }
         $query = make_query(['search' => $searchquery,'offset' => $previous]);
         echo(' / <a id="prev" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">prev</a>');
     }
     else{
-        echo('start / <a id="prev">prev</a>');
+        echo('&nbsp;&nbsp;/ start / <a id="prev">prev</a>');
         echo '<script>var x = document.getElementById("prev");x.style.visibility = "hidden";</script>';
     }
     // echo(" / [$offset:$lastentry]");
@@ -55,36 +55,38 @@ function search_display_options($searchquery){
 
     if ($showScores){
         $query = make_query(['showScores' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide scores</a>');
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">scores</a>');
     }
     else{
         $query = make_query(['showScores' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show scores</a>');
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>scores</strike></a>');
     }
     if ($showLengthRatio){
         $query = make_query(['search' => $searchquery, 'showLengthRatio' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide length ratio</a>');
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">length ratio</a>');
     }
     else{
         $query = make_query(['search' => $searchquery, 'showLengthRatio' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show length ratio</a>');
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>length ratio</strike></a>');
     }
     if ($showRatings){
         $query = make_query(['search' => $searchquery, 'showRatings' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide user ratings</a>');
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">avg rating</a>');
     }
     else{
         $query = make_query(['search' => $searchquery, 'showRatings' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show user ratings</a>');
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>avg rating</strike></a>');
     }
+    /*
     if ($showMyRatings){
         $query = make_query(['search' => $searchquery, 'showMyRatings' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> hide my ratings</a>');
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">my rating</a>');
     }
     else{
         $query = make_query(['search' => $searchquery, 'showMyRatings' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> show my ratings</a>');
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>my rating</strike></a>');
     }
+    */
 }
 
 
@@ -105,8 +107,10 @@ function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $order
     $alignments = $bitext->search($searchquery, $searchside, $limit, $offset, $orderByLinkID);
 
     search_navigation($searchquery, $offset, $limit);
+    echo('<div class="rightalign">');
     search_display_options($searchquery);
     $shown=0;
+    echo('</div></br><hr>');
     echo("<table class='bitext'>\n<tr>\n");
 
     // show either bitext ID (if we search)
