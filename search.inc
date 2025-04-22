@@ -19,9 +19,12 @@ function print_search_form($langpair, $corpus='', $version='', $fromDoc='', $toD
     if ($bitextID){
         echo('<input type="hidden" id="bitextID" name="bitextID" value="'.$bitextID.'">');
     }
-    echo('<input type="text" name="search" id="search" value="'.$searchquery.'" required />');
-    if ($allowSourceSearch) echo('<input type="submit" name="action" value="search source" />');
-    if ($allowTargetSearch) echo('<input type="submit" name="action" value="search target" />');
+    echo('<input size="12" type="text" name="search" id="search" value="'.$searchquery.'" required />');
+    // if ($allowSourceSearch) echo('<input type="submit" name="action" value="search source" />');
+    // if ($allowTargetSearch) echo('<input type="submit" name="action" value="search target" />');
+    if ($allowSourceSearch) echo('<button type="submit" name="action" value="search source">search</button>');
+    if ($allowTargetSearch) echo('<button type="submit" name="action" value="search target">search</button>');
+
     echo('</form>');
 }
 
@@ -34,14 +37,14 @@ function search_navigation($searchquery, $offset, $showMaxAlignments){
 
     if ($offset){
         $query = make_query(['search' => $searchquery, 'offset' => 0]);
-        echo('&nbsp;&nbsp;/ <a id="prev" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">start</a>');
+        echo(' <a id="prev" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">start</a>');
         $previous = $offset - $showMaxAlignments;
         if ($previous < 0){ $previous = 0; }
         $query = make_query(['search' => $searchquery,'offset' => $previous]);
         echo(' / <a id="prev" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">prev</a>');
     }
     else{
-        echo('&nbsp;&nbsp;/ start / <a id="prev">prev</a>');
+        echo(' <span style="color: white;">start</span> / <a id="prev">prev</a>');
         echo '<script>var x = document.getElementById("prev");x.style.visibility = "hidden";</script>';
     }
     // echo(" / [$offset:$lastentry]");
@@ -69,15 +72,6 @@ function search_display_options($searchquery){
         $query = make_query(['search' => $searchquery, 'showLengthRatio' => 1]);
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>length ratio</strike></a>');
     }
-    if ($showRatings){
-        $query = make_query(['search' => $searchquery, 'showRatings' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">avg rating</a>');
-    }
-    else{
-        $query = make_query(['search' => $searchquery, 'showRatings' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>avg rating</strike></a>');
-    }
-    /*
     if ($showMyRatings){
         $query = make_query(['search' => $searchquery, 'showMyRatings' => 0]);
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">my rating</a>');
@@ -86,7 +80,14 @@ function search_display_options($searchquery){
         $query = make_query(['search' => $searchquery, 'showMyRatings' => 1]);
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>my rating</strike></a>');
     }
-    */
+    if ($showRatings){
+        $query = make_query(['search' => $searchquery, 'showRatings' => 0]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">avg rating</a>');
+    }
+    else{
+        $query = make_query(['search' => $searchquery, 'showRatings' => 1]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>avg rating</strike></a>');
+    }
 }
 
 
@@ -111,15 +112,15 @@ function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $order
     search_display_options($searchquery);
     $shown=0;
     echo('</div></br><hr>');
-    echo("<table class='bitext'>\n<tr>\n");
+    echo("<table class='hbitext'>\n<tr>\n");
 
     // show either bitext ID (if we search)
     // or link ID (if we browse, can be sorted)
     if ($searchquery){
-        echo("<th>bitext&nbsp;ID</th>");
+        echo("<th class='hbitext'>bitext&nbsp;ID</th>");
     }
     else{
-        echo("<th>link&nbsp;ID");
+        echo("<th class='hbitext'>link&nbsp;ID");
         if ($allowSortLinks){
             $query = make_query(['sortLinkIDs' => (! $orderByLinkID)]);
             $sortlabel = $orderByLinkID ? '&#x29BB;' : '⇓';
@@ -128,16 +129,19 @@ function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $order
         echo("</th>");
     }
 
-    echo("<th style='text-align: right;'>source language");
+    $srcquery = $searchside == 'search source' ? $searchquery : '';
+    $trgquery = $searchside == 'search target' ? $searchquery : '';
+
+    echo("<th class='hbitext'>source language");
     print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $srcquery, 1, 0);
     echo("</th>");
-    if ($showScores) echo('<th>score</th>');
-    if ($showLengthRatio) echo('<th>ratio</th>');
-    echo("<th style='text-align: right;'>target language");
+    if ($showScores) echo('<th class="hbitext">score</th>');
+    if ($showLengthRatio) echo('<th class="hbitext">ratio</th>');
+    echo("<th class='hbitext'>target language");
     print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $trgquery, 0, 1);
     echo("</th>");
-    if ($showMyRatings) echo('<th>my ratings</th>');
-    if ($showRatings) echo('<th>ratings</th>');
+    if ($showMyRatings) echo('<th class="hbitext">my rating</th>');
+    if ($showRatings) echo('<th class="hbitext">rating</th>');
     echo("</tr>");
 
     
@@ -148,7 +152,7 @@ function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $order
         $trgText = implode(' ',$data['trgSents']);
             
         echo("<tr>\n");
-        echo("<td class='centeralign'>");
+        echo("<td class='hbitext-srcid'>");
         if ($searchquery){
             if (! ($corpus && $version && $fromDoc && $toDoc) ){
                 $info = $bitext->bitext($bitextID);
@@ -177,14 +181,14 @@ function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $order
             echo('</a>');
         }
         else echo($linkID);
-        echo("</td>\n<td class='rightalign'>");
+        echo("</td>\n<td class='hbitext-src'>");
         echo($srcText);
         echo("</td>\n");
 
         if ($showScores){
             $score = array_key_exists('alignerScore',$data) ? $data['alignerScore'] : 0;
             $color = score_color($score);
-            echo("</td><td bgcolor='$color' class='centeralign'>$score");
+            echo("</td><td bgcolor='$color' class='hbitext-score'>$score");
         }
         if ($showLengthRatio){
             $srcLen = strlen(str_replace('<b>','',str_replace('</b>','',$srcText)));
@@ -195,21 +199,21 @@ function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $order
             }
             $color = score_color($ratio);
             $pretty_ratio = sprintf('%5.3f',$ratio);
-            echo("</td><td bgcolor='$color' class='centeralign'>$pretty_ratio");
+            echo("</td><td bgcolor='$color' class='hbitext-ratio'>$pretty_ratio");
         }
         
-        echo("<td class='leftalign'>");
+        echo("<td class='hbitext-trg'>");
         echo($trgText);
             
         $textOK = ( strpos($srcText, 'SENTENCE NOT FOUND') === false &&
                     strpos($trgText, 'SENTENCE NOT FOUND') === false );
 
         if ($showMyRatings && $textOK){
-            echo('</td><td class="centeralign">');
+            echo('</td><td class="hbitext-rating">');
             printRatingStars($bitext,$linkID);
         }
         if ($showRatings && $textOK){
-            echo('</td><td class="centeralign">');
+            echo('</td><td class="hbitext-rating">');
             printAverageRatings($bitext,$linkID);
         }
 

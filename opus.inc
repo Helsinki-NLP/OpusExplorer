@@ -47,7 +47,7 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
                     $query = make_query(['aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
                                          'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
                     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$fromDoc.'</a> / ');
-                    if (! $searchquery) bitext_browsing_links($bitext, $alignType);
+                    // if (! $searchquery) bitext_browsing_links($bitext, $alignType);
                 }
             }
         }

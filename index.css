@@ -44,7 +44,7 @@ table.vertical-bitext {
 
 th.vertical-bitext {
     width: 100%;
-    border: 2px solid;
+    border: 1px solid;
     border-collapse: collapse;
     border-spacing: 0 0;
 }
@@ -76,12 +76,9 @@ td.bitextspace   {
 }
 
 
-table.vbitext {
-    border: none;
-    border-collapse: collapse;
-}
 
 
+/*
 tr.vbitext-src {
     border-top: 20px solid;
     border-color: white;
@@ -92,24 +89,225 @@ tr.vbitext-trg {
     border-color: white;
 }
 
+
 th.vbitext {
     border: 2px solid;
 }
+*/
+
+    /*
+tr.vbitext-src   {
+
+    border-radius: 10px 0px 0px 0px;
+    border-top: 2px solid;
+    border-bottom: 1px dotted;
+    border-left: 2px solid;
+    border-right: 2px solid;
+    background-color: #eeeeee;
+}
+tr.vbitext-trg   {
+    border-top: 1px dotted;
+    border-bottom: 2px solid;
+    border-left: 2px solid;
+    border-right: 2px solid;
+
+}
+*/
+
+
+table.vbitext {
+    border: none;
+    border-collapse: separate;
+    border-spacing: 0px;
+}
+
+th.vbitext   {
+    border: none;
+    padding: 10px;
+}
+
+th.vbitext-docname   {
+    border: none;
+    padding: 10px;
+    text-align: right;
+}
+
+td.vbitext {
+    border: 1px dotted;
+}
+
+td.vbitext-srcid {
+    border-radius: 10px 0px 0px 0px;
+    border-top: 2px solid;
+    border-bottom: none;
+    border-left: 2px solid;
+    border-right: 1px dotted;
+    background-color: #eeeeee;
+    text-align: center;
+}
+
+td.vbitext-trgid {
+    border-radius: 0px 0px 0px 10px;
+    border-top: 1px dotted;
+    border-bottom: 2px solid;
+    border-left: 2px solid;
+    border-right: 1px dotted;
+    text-align: center;
+}
+
+td.vbitext-id {
+    text-align: center;
+}
+
+td.vbitext-score {
+    text-align: center;
+    border-radius: 0px 10px 0px 0px;
+    border-top: 2px solid;
+    border-bottom: none;
+    border-left: 1px dotted;
+    border-right: 2px solid;
+
+}
+
+td.vbitext-ratio {
+    text-align: center;
+    border-radius: 0px 0px 10px 0px;
+    border-top: none;
+    border-bottom: 2px solid;
+    border-left: 1px dotted;
+    border-right: 2px solid;
+}
+
 
 td.vbitext-src {
     border-top: 2px solid;
-    border-bottom: 1px dotted;
-    border-left: 1px dotted;
-    border-right: 1px dotted;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
     background-color: #eeeeee;
+    padding: 5px;
 }
 
 td.vbitext-trg {
     border-top: 1px dotted;
     border-bottom: 2px solid;
-    border-left: 1px dotted;
-    border-right: 1px dotted;
+    border-left: none;
+    border-right: none;
+    padding: 5px;
 }
+
+td.vbitext-rating   {
+    border: none;
+    padding-top: 10px;
+    padding-bottom: 30px;
+}
+
+
+
+
+
+
+table.hbitext {
+    border: none;
+    border-collapse: separate;
+    border-spacing: 2px;
+}
+
+th.hbitext   {
+    border: none;
+    padding: 10px;
+    text-align: center;
+}
+
+td.hbitext {
+    border: 1px dotted;
+}
+
+td.hbitext-srcid {
+    border-radius: 10px 0px 0px 10px;
+    border-top: 1px solid;
+    border-bottom: 1px solid;
+    border-left: 1px solid;
+    border-right: none;
+    text-align: center;
+}
+
+td.hbitext-trgid {
+    border-radius: 0px 10px 10px 0px;
+    border-top: 1px solid;
+    border-bottom: 1px solid;
+    border-right: 1px solid;
+    border-left: none;
+    text-align: center;
+}
+
+td.hbitext-edit-src {
+    border-radius: 10px 0px 0px 10px;
+    border: 1px solid;
+    text-align: center;
+    width: 45%;
+}
+
+td.hbitext-edit-trg {
+    border-radius: 0px 10px 10px 0px;
+    border: 1px solid;
+    text-align: center;
+    width: 45%;
+}
+
+td.hbitext-score {
+    /*
+    border-top: none;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    border-spacing: 0px;
+   */
+    border: none;
+    text-align: center;
+}
+
+td.hbitext-ratio {
+    /*
+    border-top: none;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    border-spacing: 0px;
+   */
+    border: none;
+    text-align: center;
+}
+
+
+td.hbitext-src {
+    border-top: 1px solid;
+    border-bottom: 1px solid;
+    border-left: 1px solid;
+    border-right: 1px solid;
+    text-align: right;
+    padding: 5px;
+    width: 40%;
+    background-color: #eeeeee;
+}
+
+td.hbitext-trg {
+    border-top: 1px solid;
+    border-bottom: 1px solid;
+    border-left: 1px solid;
+    border-right: 1px solid;
+    text-align: left;
+    padding: 5px;
+    width: 40%;
+}
+
+td.hbitext-rating   {
+    border: none;
+    text-align: center;
+}
+
+
+
 
 
 .slider {

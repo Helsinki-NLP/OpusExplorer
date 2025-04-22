@@ -6,13 +6,16 @@ if (isset($_GET['logout'])){
     unset($_SESSION['user']);
 }
 
-
+/*
 # add those lines to experiment with different css styles
 #
 #  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 #  <meta http-equiv="Pragma" content="no-cache" />
 #  <meta http-equiv="Expires" content="0" />
+*/
 
+// keep scroll position on reload: see
+// https://stackoverflow.com/questions/17642872/refresh-page-and-keep-scroll-position
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
@@ -22,11 +25,18 @@ if (isset($_GET['logout'])){
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="index.css?v17" type="text/css">
+  <link rel="stylesheet" href="index.css?v34" type="text/css">
   <script type="text/javascript">
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
 	}
+    document.addEventListener("DOMContentLoaded", function(event) { 
+            var scrollpos = localStorage.getItem('scrollpos');
+            if (scrollpos) window.scrollTo(0, scrollpos);
+    });
+    window.onbeforeunload = function(e) {
+        localStorage.setItem('scrollpos', window.scrollY);
+    };
   </script>
 </head>
 <body>
@@ -85,13 +95,15 @@ if ($tableStyle == 'edit') $showModified=1;
 $resourceView = get_param('resourceView','langMatrix');
 
 
+/*
 ## special permissions for document-level corpora (sentences in context):
 ## - allow to edit alignments
 ## - allow to sort by link ID
 ## - allow to search for other alignment types (expensive search for large doc's!)
+*/
 
-// $allowEdit = in_array($corpus, $ALLOW_EDIT);
-$allowEdit = 0;
+$allowEdit = $user != 'guest' ? in_array($corpus, $ALLOW_EDIT) : 0;
+// $allowEdit = 1;
 $allowOtherAlignTypes = in_array($corpus, $ALLOW_EDIT);
 $allowSortLinks = in_array($corpus, $ALLOW_EDIT);
 
@@ -105,7 +117,8 @@ $toDocQuery = filter_var(get_param('toDocQuery',''),FILTER_SANITIZE_STRING);
 // create the bitext object and handle ratings
 /////////////////////////////////////////////////////////////////
 
-$bitext = new bitext($DB_DIR, $user, $corpus, $version, $langpair, $fromDoc, $toDoc, $opusLangpair,
+$bitext = new bitext($DB_DIR, $user, $corpus, $version,
+                     $langpair, $fromDoc, $toDoc, $opusLangpair,
                      $showModified, $showLatest);
 // $version = $bitext->version;
 

@@ -1,6 +1,13 @@
 <?php // -*-php-*-
 
 
+$ArrowUp    = '&#x2B06;';
+$ArrowDown  = '&#x2B07;';
+$EditSymbol = '&#x270E;';
+
+// other symbols: ⇑⇓
+// see also https://www.alt-codes.net/arrow_alt_codes.php
+
 class bitext {
 
     protected $index;
@@ -64,9 +71,14 @@ class bitext {
         asort($this->opusLangpairs);
         if (sizeof($this->opusLangpairs)){
             if (! $opusLangpair){
+                // echo("$this->opusLangpair = ".$this->opusLangpairs[0]);
                 $this->opusLangpair = $this->opusLangpairs[0];
                 $this->index->setLinkDb($indexDir,$srclang,$trglang,$corpus,$version,
                                         $fromDoc,$toDoc,$opusLangpair);
+                if ($fromDoc && $toDoc){
+                    $bitextID=$this->id();
+                    if ($showUserData && $bitextID) $this->index->openUserDB($bitextID);
+                }
             }
             elseif (! in_array($opusLangpair,$this->opusLangpairs)){
                 $this->opusLangpair = $this->opusLangpairs[0];
@@ -453,23 +465,23 @@ function bitext_browsing_links($bitext, $selectedAlignType=''){
     global $ALIGN_TYPES, $allowOtherAlignTypes;
 
     if ($tableStyle == 'edit' && $allowEdit){
-        $query = make_query(['style' => 'horizontal']);
-        echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">stop editing</a> / ');
+        $query = make_query(['style' => 'horizontal', 'showModified' => 1]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">stop editing</a>');
     }
     else{
         if ($bitext->userDataExists()){
             if ($showModified){
                 $query = make_query(['showModified' => 0]);
-                echo('modified / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">original</a> / ');
+                echo(' / modified / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">original</a>');
             }
             else{
                 $query = make_query(['showModified' => 1]);
-                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">modified</a> / original / ');
+                echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">modified</a> / original');
             }
         }
         if ($allowEdit){
             $query = make_query(['style' => 'edit']);
-            echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit mode</a> / ');
+            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit mode</a>');
         }
 
         if (! $SHOW_ALIGN_TYPES) return;
@@ -477,24 +489,24 @@ function bitext_browsing_links($bitext, $selectedAlignType=''){
         foreach ($ALIGN_TYPES as $type){
             if ($selectedAlignType != $type){
                 $query = make_query(['aligntype' => $type, 'offset' => 0]);
-                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$type.'</a> / ');
+                echo('/ <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$type.'</a>');
             }
-            else echo($type.' / ');
+            else echo(' / '.$type);
         }
         if ($allowOtherAlignTypes){
             if ($selectedAlignType != 'other'){
                 $query = make_query(['aligntype' => 'other', 'offset' => 0]);
-                echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">other</a> / ');
+                echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">other</a>');
             }
-            else echo('other / ');
+            else echo(' / other');
         }
         if ($showEmpty){
             $query = make_query(['showEmpty' => 0]);
-            echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">hide empty</a>');
+            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">hide empty</a>');
         }
         else{
             $query = make_query(['showEmpty' => 1]);
-            echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">show empty</a>');
+            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">show empty</a>');
         }
     }
 }
@@ -607,9 +619,14 @@ function print_bitext($bitext, $type='', $offset=0){
         // bitext_score_options();
         // bitext_rating_options();
         // bitext_rating($bitext);
+        global $searchquery, $alignType;
 
         if ($tableStyle == 'edit' && $allowEdit){
             echo('<div class="rightalign">');
+            if (! $searchquery) bitext_browsing_links($bitext, $alignType);
+            bitext_score_options();
+            bitext_user_rating_option();
+            bitext_average_rating_option();
             bitext_display_options();
             echo('</div></br><hr>');
             $shown = print_editable_bitext_table($alignments,
@@ -618,6 +635,7 @@ function print_bitext($bitext, $type='', $offset=0){
         }
         elseif ($tableStyle == 'vertical'){
             echo('<div class="rightalign">');
+            if (! $searchquery) bitext_browsing_links($bitext, $alignType);
             bitext_user_rating_option();
             bitext_display_options();
             echo('</div></br><hr>');
@@ -627,10 +645,11 @@ function print_bitext($bitext, $type='', $offset=0){
         }
         else{
             echo('<div class="rightalign">');
+            if (! $searchquery) bitext_browsing_links($bitext, $alignType);
             bitext_score_options();
             bitext_average_rating_option();
-            bitext_display_options();
             // bitext_rating_options();
+            bitext_display_options();
             echo('</div></br><hr>');
             $shown = print_horizontal_bitext_table($alignments,
                                                    $showScores, $showLengthRatio,
@@ -659,19 +678,18 @@ function print_horizontal_bitext_table($alignments,
 
     global $langpair, $showModified;
     
-    echo('<p><table class="bitext">');
-    echo("<tr><th>IDs</th>");
-    echo("<th style='text-align: right;'>".$fromDoc);
+    echo('<p><table class="hbitext">');
+    echo("<tr><th class='hbitext'>IDs</th>");
+    echo("<th class='hbitext'>".$fromDoc);
     print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
     echo("</th>");
-    // if ($showScores || $showLengthRatio) echo('<th>score</th>');
-    if ($showScores) echo('<th>score</th>');
-    if ($showLengthRatio) echo('<th>ratio</th>');
-    echo("<th style='text-align: right;'>".$toDoc);
+    if ($showScores) echo('<th class="hbitext">score</th>');
+    if ($showLengthRatio) echo('<th class="hbitext">ratio</th>');
+    echo("<th class='hbitext'>".$toDoc);
     print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
-    echo("</th><th>IDs</th>");
-    // if ($showMyRatings) echo('<th>my ratings</th>');
-    if ($showRatings) echo('<th>ratings</th>');
+    echo("</th><th class='hbitext'>IDs</th>");
+    // if ($showMyRatings) echo('<th>my rating</th>');
+    if ($showRatings) echo('<th class="hbitext">rating</th>');
     echo("</tr>");
     $i = 0;
     while ($row = $alignments->next()) {
@@ -680,42 +698,14 @@ function print_horizontal_bitext_table($alignments,
         $srcText = implode(' ',$row['srcSents']);
         $trgText = implode(' ',$row['trgSents']);
 
-        echo('<tr><td class="centeralign">');
-        echo(implode('&nbsp;',$row['srcIDs']).'</td><td class="rightalign">');
+        echo('<tr><td class="hbitext-srcid">');
+        echo(implode('&nbsp;',$row['srcIDs']).'</td><td class="hbitext-src">');
         echo($srcText);
 
-        /*
-        if ($showScores || $showLengthRatio){
-            echo("</td><td><table>");
-            if ($showScores){
-                $score = $row['alignerScore'];
-                $scoreColor = score_color($score);
-            }
-
-            if ($showLengthRatio){
-                $srcLen = mb_strlen($srcText);
-                $trgLen = mb_strlen($trgText);
-                $ratio = 0;
-                if ($srcLen or $trgLen){
-                    $ratio = $srcLen > $trgLen ? $trgLen / $srcLen : $srcLen / $trgLen;
-                }
-                $ratioColor = score_color($ratio);
-                $pretty_ratio = sprintf('%5.3f',$ratio);
-            }
-            if ($showScores && $score)
-                echo("<tr><td bgcolor='$scoreColor' class='centeralign'>$score</td></tr>");
-            elseif ($showLengthRatio)
-                echo("<tr><td bgcolor='$ratioColor' class='centeralign'>&nbsp;</td></tr>");
-            else
-                echo("<tr><td bgcolor='$scoreColor' class='centeralign'>&nbsp;</td></tr>");
-            if ($showLengthRatio)
-                echo("<tr><td bgcolor='$ratioColor' class='centeralign'>$pretty_ratio</td></tr>");
-            echo("</table>");
-        }*/
         if ($showScores){
             $score = $row['alignerScore'];
             $color = score_color($score);
-            echo("</td><td bgcolor='$color' class='centeralign'>$score");
+            echo("</td><td bgcolor='$color' class='hbitext-score'>$score");
         }
         if ($showLengthRatio){
             $srcLen = mb_strlen($srcText);
@@ -726,12 +716,12 @@ function print_horizontal_bitext_table($alignments,
             }
             $color = score_color($ratio);
             $pretty_ratio = sprintf('%5.3f',$ratio);
-            echo("</td><td bgcolor='$color' class='centeralign'>$pretty_ratio");
+            echo("</td><td bgcolor='$color' class='hbitext-ratio'>$pretty_ratio");
         }
             
-        echo('</td><td class="leftalign">');
+        echo('</td><td class="hbitext-trg">');
         echo($trgText);
-        echo('</td><td class="centeralign">'.implode('&nbsp;',$row['trgIDs']));
+        echo('</td><td class="hbitext-trgid">'.implode('&nbsp;',$row['trgIDs']));
 
         $textOK = ( strpos($srcText, 'SENTENCE NOT FOUND') === false &&
                     strpos($trgText, 'SENTENCE NOT FOUND') === false );
@@ -744,7 +734,7 @@ function print_horizontal_bitext_table($alignments,
         }
         */
         if ($showRatings && $textOK){
-            echo('</td><td class="centeralign">');
+            echo('</td><td class="hbitext-rating">');
             // print_average_ratings($bitextID,$row['linkID']);
             printAverageRatings($bitext,$row['linkID']);
         }
@@ -761,12 +751,16 @@ function print_vertical_bitext_table($alignments,
                                      $showMyRatings=1, $showRatings=0){
 
     $bitext = $alignments->bitext;
+    $corpus = $bitext->corpus;
+    $version = $bitext->version;
     $fromDoc = $bitext->fromDoc;
     $toDoc = $bitext->toDoc;
     $bitextID = $bitext->id();
 
     $showScores=1;
     $showLengthRatio=1;
+
+    global $langpair;
 
     if ($showMyRatings){
         echo '<form action="index.php" method="get" id="ratingForm">';
@@ -777,29 +771,18 @@ function print_vertical_bitext_table($alignments,
     
     echo('<p><table class="vbitext">');
     
-    echo("<tr><th class='bitext'>source<br/>target</th><th>$fromDoc<br/>$toDoc</th>");
-    /*
-    echo("<tr><th>source<br/>target</th><th>$fromDoc");
+    echo("<tr><th class='vbitext-docname'>source<br/>target</th>");
+    echo("<th class='vbitext-docname'>$fromDoc&nbsp;");
     print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
-    echo("<br/>$toDoc");
+    echo("<br/>$toDoc&nbsp;");
     print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
-    echo('</th>');
-    */
-
-    if ($showScores){
-        if ($showLengthRatio) echo('<th>score<br/>ratio</th>');
-        else echo('<th>score<br/>&nbsp;</th>');
-    }
-    elseif ($showLengthRatio) echo('<th>&nbsp;<br/>ratio</th>');
+    echo("</th>");
     
-
-    /*
-    if ($showMyRatings){
-        if ($showRatings) echo('<th>my&nbsp;ratings<br/>avg&nbsp;ratings</th>');
-        else echo('<th>my&nbsp;ratings<br/>&nbsp;</th>');
+    if ($showScores){
+        if ($showLengthRatio) echo('<th class="vbitext">score<br/>ratio</th>');
+        else echo('<th class="vbitext">score<br/>&nbsp;</th>');
     }
-    elseif ($showRatings) echo('<th>&nbsp;<br/>avg&nbsp;ratings</th>');
-    */
+    elseif ($showLengthRatio) echo('<th class="vbitext">&nbsp;<br/>ratio</th>');
     echo("</tr>");
     
     $i = 0;
@@ -832,76 +815,52 @@ function print_vertical_bitext_table($alignments,
         
         // source language row
         
-        echo('<tr class="bitextsrc"><td class="centeralign">');
-        echo(implode('&nbsp;',$row['srcIDs']).'</td><td>');
+        echo('<tr class="vbitext-src"><td class="vbitext-srcid">');
+        echo(implode('&nbsp;',$row['srcIDs']).'</td><td class="vbitext-src">');
         echo($srcText);
-
         if ($showScores and $score)
-            echo("</td><td bgcolor='$scoreColor' class='centeralign'>$score");
+            echo("</td><td bgcolor='$scoreColor' class='vbitext-score'>$score");
         elseif ($showLengthRatio or ($showScores and $score==0))
-            echo("</td><td bgcolor='$ratioColor'>&nbsp;");
-
-        
-        /*
-        if ($textOK){
-            if ($showMyRatings){
-                echo('</td><td class="centeralign">');
-                // print_rating_stars($bitextID,$row['linkID']);
-                printRatingStars($bitext,$row['linkID']);
-            }
-            elseif ($showRatings){
-                echo("</td><td>");
-            }
-        }
-        */
+            echo("</td><td bgcolor='$ratioColor' class='vbitext-score'>&nbsp;");
         echo("</td></tr>");
 
         
         // target language row
         
-        echo('<tr class="bitexttrg"><td class="centeralign">');
-        echo(implode('&nbsp;',$row['trgIDs']).'</td><td>');
+        echo('<tr class="vbitext-trg"><td class="vbitext-trgid">');
+        echo(implode('&nbsp;',$row['trgIDs']).'</td><td class="vbitext-trg">');
         echo($trgText);
-
         if ($showLengthRatio)
-            echo("</td><td bgcolor='$ratioColor' class='centeralign'>$pretty_ratio");
+            echo("</td><td bgcolor='$ratioColor' class='vbitext-ratio'>$pretty_ratio");
         elseif ($showScores)
-            echo("</td><td bgcolor='$scoreColor' class='centeralign'>&nbsp;");
-
-
-        /*
-        if ($textOK){
-            if ($showRatings){
-                echo('</td><td class="centeralign">');
-                // print_average_ratings($bitextID,$row['linkID']);
-                printAverageRatings($bitext,$row['linkID']);
-            }
-            elseif ($showMyRatings){
-                echo("</td><td>");
-            }
-        }
-        */
+            echo("</td><td bgcolor='$scoreColor' class='vbitext-score'>&nbsp;");
         echo('</td></tr>');
+
         
-        echo('<tr class="bitextspace">');
+        // rating row
+        
+        echo('<tr class="vbitext-rating">');
         if ($textOK and $showMyRatings){
             $lid = $row['linkID'];
-            echo('<td class="bitextspace">');
-            printRatingStars($bitext,$lid);
-            echo('</td><td class="bitextspace">');
             $rating = $bitext->getMyAlignmentRating($lid);
+            echo('<td class="vbitext-rating">');
+            if ($rating)
+                printRatingStars($bitext,$lid);
+            else
+                printStars($bitext->getAverageAlignmentRating($lid));                
+            echo('</td><td class="vbitext-rating">');
             $value = $rating == 0 ? 50 : $rating;
             echo("<input type='range' min='1' max='100' value='$value' class='slider' id='slider$lid'>");
             echo('</td>');
-            echo('<td class="bitextspace">');
+            echo('<td class="vbitext-rating">');
             echo("<span id='rating$lid'>$rating</span>");
-            // echo('&nbsp;&#10060;&#11152;&nbsp;');
             $query = make_query(['linkID' => $row['linkID'], 'rating' => -1]);
             if ($rating){
-                echo("&nbsp;<a class='black' style=\"text-decoration: none;\" href=\"$PHP_SELF?$query\">&#11152;</a>");
-                // echo("&nbsp;<a class='black' style=\"text-decoration: none;\" href=\"$PHP_SELF?$query\">&#10226;</a>");
-                // echo("&nbsp;<a class='black' style=\"text-decoration: none;\" href=\"$PHP_SELF?$query\">&#x1f5d1;</a>");
-                
+                echo("&nbsp;<a class='black' style=\"text-decoration: none;\" href=\"$PHP_SELF?$query\">&#x2B07;</a>");
+            }
+            // make sure that the table cell height stays the same: print a invisible white arrow
+            else{
+                echo("<span style=\"color: white;\">&#x2B07;</span>");
             }
             echo('<script>');
             echo("var slider$lid = document.getElementById('slider$lid');");
@@ -918,22 +877,17 @@ function print_vertical_bitext_table($alignments,
             echo('}</script>');
             echo('</td>');
         }
-        // elseif ($textOK and $showRatings){
         else{
             $lid = $row['linkID'];
-            echo('<td class="bitextspace">');
+            echo('<td class="vbitext-rating">');
             $rating = $bitext->getAverageAlignmentRating($lid);
             if ($rating){
                 printStars($rating);
             }
             // printAverageRatings($bitext,$lid);
             echo('</td>');
+            echo("<td class='vbitext-rating'><span style=\"color: white;\">&#x2B07;</span></td>");
         }
-        /*
-        else{
-            echo('<td class="bitextspace"></td>');
-        }
-        */
         echo('</tr>');
 
     }
@@ -949,6 +903,7 @@ function print_editable_bitext_table($alignments,
 
     global $segmentFirstBgColor, $segmentFirstBorderColor;
     global $segmentOtherBgColor, $segmentOtherBorderColor;
+    global $ArrowUp, $ArrowDown;
 
     $bitext = $alignments->bitext;
     $fromDoc = $bitext->fromDoc;
@@ -957,18 +912,15 @@ function print_editable_bitext_table($alignments,
 
     $PHP_SELF=$_SERVER['PHP_SELF'];
 
-    echo('<table class="bitext">');
-    echo("<tr><th>$fromDoc</th>");
-    if ($showScores) echo('<th>score</th>');
-    if ($showLengthRatio) echo('<th>ratio</th>');
-    echo("<th>$toDoc</th>");
-    if ($showMyRatings) echo('<th>my ratings</th>');
-    if ($showRatings) echo('<th>ratings</th>');
+    echo('<table class="hbitext">');
+    echo("<tr><th class='hbitext'>$fromDoc</th>");
+    if ($showScores) echo('<th class="hbitext">score</th>');
+    if ($showLengthRatio) echo('<th class="hbitext">ratio</th>');
+    echo("<th class='hbitext'>$toDoc</th>");
+    if ($showMyRatings) echo('<th class="hbitext">my rating</th>');
+    if ($showRatings) echo('<th class="hbitext">rating</th>');
     echo("</tr>");
 
-    $srcAnchors = array();
-    $trgAnchors = array();
-        
     $i = 0;
     $prevLinkID = 0;
                 
@@ -990,11 +942,8 @@ function print_editable_bitext_table($alignments,
         }
 
         echo('<tr bgcolor="'.$segmentBgColor.'">');
-        echo('<td class="bitext-src"><table class="segment">');
+        echo('<td class="hbitext-edit-src"><table class="segment">');
         for ($x=0; $x<count($row['srcIDs']);$x++){
-            array_push($srcAnchors,$row['srcIDs'][$x]);
-            echo '<a name="src-'.$row['srcIDs'][$x].'" />';
-            $anchor = (count($srcAnchors) > 4) ? '#src-'.$srcAnchors[count($srcAnchors)-4] : '';
             echo("<tr>");
             echo("<td class='segment-move'>");
             if ($row['srcIDs'][$x]){
@@ -1002,7 +951,7 @@ function print_editable_bitext_table($alignments,
                 $query = make_query(['changelink' => $row['linkID'], 'del-src' => $row['srcIDs'][$x]]);
                 echo("</td><td class='segment-move' onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                                   onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-                                  onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x1f5d1;");
+                                  onClick=\"window.location='$PHP_SELF?$query'\">&#x1f5d1;");
             }
             echo("</td>");
             
@@ -1011,14 +960,14 @@ function print_editable_bitext_table($alignments,
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentFirstBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-                          onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇑</td>");
+                          onClick=\"window.location='$PHP_SELF?$query'\">$ArrowUp</td>");
             }
             elseif ($x == count($row['srcIDs'])-1 && $row['srcIDs'][$x]){
                 $query = make_query(['changelink' => $row['linkID'], 'move-src' => $row['srcIDs'][$x], 'to' => $nextLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-                          onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇓</td>");
+                          onClick=\"window.location='$PHP_SELF?$query'\">$ArrowDown</td>");
             }
             else{
                 echo("<td class='segment-move'></td>");
@@ -1033,14 +982,14 @@ function print_editable_bitext_table($alignments,
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-                          onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇓</td>");
+                          onClick=\"window.location='$PHP_SELF?$query'\">$ArrowDown</td>");
             }
             elseif ($x == 0 && $prevLinkID && $row['srcIDs'][$x]){
                 $query = make_query(['changelink' => $row['linkID'], 'move-src' => $row['srcIDs'][$x], 'to' => $prevLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentFirstBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-                          onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇑</td>");
+                          onClick=\"window.location='$PHP_SELF?$query'\">$ArrowUp</td>");
             }
             else{
                 echo("<td class='segment-move'></td>");
@@ -1052,7 +1001,7 @@ function print_editable_bitext_table($alignments,
         if ($showScores){
             $score = $row['alignerScore'];
             $color = score_color($score);
-            echo("<td bgcolor='$color' class='centeralign'>$score</td>");
+            echo("<td bgcolor='$color' class='hbitext-score'>$score</td>");
         }
         if ($showLengthRatio){
             $srcLen = mb_strlen($srcText);
@@ -1063,15 +1012,12 @@ function print_editable_bitext_table($alignments,
             }
             $color = score_color($ratio);
             $pretty_ratio = sprintf('%5.3f',$ratio);
-            echo("<td bgcolor='$color' class='centeralign'>$pretty_ratio</td>");
+            echo("<td bgcolor='$color' class='hbitext-ratio'>$pretty_ratio</td>");
         }
             
 
-        echo('<td class="bitext-trg"><table class="segment">');
+        echo('<td class="hbitext-edit-trg"><table class="segment">');
         for ($x=0; $x<count($row['trgIDs']);$x++){
-            array_push($trgAnchors,$row['trgIDs'][$x]);
-            echo '<a name="trg-'.$row['trgIDs'][$x].'" />';
-            $anchor = (count($trgAnchors) > 4) ? '#trg-'.$trgAnchors[count($trgAnchors)-4] : '';
             echo("<tr>");
             
             if ($x == count($row['trgIDs'])-1 && $row['trgIDs'][$x]){
@@ -1079,14 +1025,14 @@ function print_editable_bitext_table($alignments,
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-                          onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇓</td>");
+                          onClick=\"window.location='$PHP_SELF?$query'\">$ArrowDown</td>");
             }
             elseif ($x == 0 && $prevLinkID && $row['trgIDs'][$x]){
                 $query = make_query(['changelink' => $row['linkID'], 'move-trg' => $row['trgIDs'][$x], 'to' => $prevLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentFirstBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-                          onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇑</td>");
+                          onClick=\"window.location='$PHP_SELF?$query'\">$ArrowUp</td>");
             }
             else{
                 echo("<td class='segment-move'></td>");
@@ -1101,14 +1047,14 @@ function print_editable_bitext_table($alignments,
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentFirstBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-                          onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇑</td>");
+                          onClick=\"window.location='$PHP_SELF?$query'\">$ArrowUp</td>");
             }
             elseif ($x == count($row['trgIDs'])-1 && $row['trgIDs'][$x]){
                 $query = make_query(['changelink' => $row['linkID'], 'move-trg' => $row['trgIDs'][$x], 'to' => $nextLinkID]);
                 echo("<td class='segment-move' 
                           onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                           onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-                          onClick=\"window.location='$PHP_SELF?$query$anchor'\">⇓</td>");
+                          onClick=\"window.location='$PHP_SELF?$query'\">$ArrowDown</td>");
             }
             else{
                 echo("<td class='segment-move'></td>");
@@ -1119,7 +1065,7 @@ function print_editable_bitext_table($alignments,
                 $query = make_query(['changelink' => $row['linkID'], 'del-trg' => $row['trgIDs'][$x]]);
                 echo("<td class='segment-move' onMouseOver=\"setStyle(this,'backgroundColor','$segmentOtherBgColor')\" 
                             onMouseOut=\"setStyle(this,'backgroundColor','white')\"
-                            onClick=\"window.location='$PHP_SELF?$query$anchor'\">&#x1f5d1;");
+                            onClick=\"window.location='$PHP_SELF?$query'\">&#x1f5d1;");
                 echo("</td>");
             }
             echo("<td class='segment-move'>");
@@ -1132,14 +1078,12 @@ function print_editable_bitext_table($alignments,
                     strpos($trgText, 'SENTENCE NOT FOUND') === false );
 
         if ($showMyRatings && $textOK){
-            echo('<td class="centeralign">');
-            // print_rating_stars($bitextID,$row['linkID']);
+            echo('<td class="hbitext-rating">');
             printRatingStars($bitext,$row['linkID']);
             echo('</td>');
         }
         if ($showRatings && $textOK){
-            echo('<td class="centeralign">');
-            // print_average_ratings($bitextID,$row['linkID']);
+            echo('<td class="hbitext-rating">');
             printAverageRatings($bitext,$row['linkID']);
             echo('</td>');
         }
