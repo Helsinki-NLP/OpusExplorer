@@ -25,7 +25,7 @@ if (isset($_GET['logout'])){
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="index.css?v34" type="text/css">
+  <link rel="stylesheet" href="index.css?v36" type="text/css">
   <script type="text/javascript">
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
@@ -33,10 +33,15 @@ if (isset($_GET['logout'])){
     document.addEventListener("DOMContentLoaded", function(event) { 
             var scrollpos = localStorage.getItem('scrollpos');
             if (scrollpos) window.scrollTo(0, scrollpos);
+            localStorage.setItem('scrollpos', 0);
     });
     window.onbeforeunload = function(e) {
         localStorage.setItem('scrollpos', window.scrollY);
     };
+    function saveScrollPosition() {
+      localStorage.setItem('scrollpos', window.scrollY);
+      location.reload(); 
+    }
   </script>
 </head>
 <body>
@@ -79,8 +84,8 @@ if ($alignType == '0-1' || $alignType == '1-0') $showEmpty=1;
 
 $showScores = get_param('showScores',1);
 $showLengthRatio = get_param('showLengthRatio',1);
-$showRatings = get_param('showRatings',0);
-$showMyRatings = get_param('showMyRatings',1);
+$showRatings = get_param('showRatings',1);
+$showMyRatings = get_param('showMyRatings',0);
 $showModified = get_param('showModified',1);
 // $showLatest = get_param('showLatest',0);
 

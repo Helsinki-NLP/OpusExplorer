@@ -14,16 +14,18 @@ function print_search_form($langpair, $corpus='', $version='', $fromDoc='', $toD
     }
     if ($fromDoc && $toDoc){
         echo('<input type="hidden" id="fromDoc" name="fromDoc" value="'.$fromDoc.'">');
-        echo('<input type="hidden" id="toDoc" name="fromDoc" value="'.$toDoc.'">');
+        echo('<input type="hidden" id="toDoc" name="toDoc" value="'.$toDoc.'">');
     }
     if ($bitextID){
         echo('<input type="hidden" id="bitextID" name="bitextID" value="'.$bitextID.'">');
     }
-    echo('<input size="12" type="text" name="search" id="search" value="'.$searchquery.'" required />');
-    // if ($allowSourceSearch) echo('<input type="submit" name="action" value="search source" />');
-    // if ($allowTargetSearch) echo('<input type="submit" name="action" value="search target" />');
-    if ($allowSourceSearch) echo('<button type="submit" name="action" value="search source">search</button>');
-    if ($allowTargetSearch) echo('<button type="submit" name="action" value="search target">search</button>');
+    echo('<input size="12" type="text" name="search" id="search" value="'.$searchquery.'" required />&nbsp;&nbsp;');
+    if ($allowSourceSearch && $allowTargetSearch){
+        echo('<input type="submit" name="action" value="search source" />');
+        echo('<input type="submit" name="action" value="search target" />');
+    }
+    elseif ($allowSourceSearch) echo('<button type="submit" name="action" value="search source">search</button>');
+    elseif ($allowTargetSearch) echo('<button type="submit" name="action" value="search target">search</button>');
 
     echo('</form>');
 }

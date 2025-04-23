@@ -1,9 +1,15 @@
 <?php // -*-php-*-
 
 
-$ArrowUp    = '&#x2B06;';
-$ArrowDown  = '&#x2B07;';
-$EditSymbol = '&#x270E;';
+$ArrowUp      = '&#x2B06;';
+$ArrowDown    = '&#x2B07;';
+$EditSymbol   = '&#x270E;';
+// $DeleteSymbol = '&#x232B;';
+// $DeleteSymbol = '&#x2B0B;'; // South West Black Arrow
+// $DeleteSymbol = '&#x10102;';
+// $DeleteSymbol = '&#x24E7;'; // circle cross
+// $DeleteSymbol = '&#x29BB;';
+$DeleteSymbol = '&#x2A02;';
 
 // other symbols: ⇑⇓
 // see also https://www.alt-codes.net/arrow_alt_codes.php
@@ -680,12 +686,14 @@ function print_horizontal_bitext_table($alignments,
     
     echo('<p><table class="hbitext">');
     echo("<tr><th class='hbitext'>IDs</th>");
-    echo("<th class='hbitext'>".$fromDoc);
+    echo("<th class='hbitext'>");
+    echo($fromDoc.'&nbsp;&nbsp;');
     print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
+    // echo("&nbsp;&nbsp;$fromDoc");
     echo("</th>");
     if ($showScores) echo('<th class="hbitext">score</th>');
     if ($showLengthRatio) echo('<th class="hbitext">ratio</th>');
-    echo("<th class='hbitext'>".$toDoc);
+    echo("<th class='hbitext'>".$toDoc.'&nbsp;&nbsp;');
     print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
     echo("</th><th class='hbitext'>IDs</th>");
     // if ($showMyRatings) echo('<th>my rating</th>');
@@ -761,6 +769,7 @@ function print_vertical_bitext_table($alignments,
     $showLengthRatio=1;
 
     global $langpair;
+    global $DeleteSymbol;
 
     if ($showMyRatings){
         echo '<form action="index.php" method="get" id="ratingForm">';
@@ -771,18 +780,24 @@ function print_vertical_bitext_table($alignments,
     
     echo('<p><table class="vbitext">');
     
-    echo("<tr><th class='vbitext-docname'>source<br/>target</th>");
-    echo("<th class='vbitext-docname'>$fromDoc&nbsp;");
+    // echo("<tr><th class='vbitext-docname'>source<br/>target</th>");
+    echo("<tr><th class='vbitext-id'>IDs</th>");
+    echo("<th><div class='leftalign'>&nbsp;&nbsp;");
+    echo("$fromDoc&nbsp;&nbsp;");
     print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
-    echo("<br/>$toDoc&nbsp;");
+    // echo("<br/>$toDoc&nbsp;");
+    echo("</div> <div class='rightalign'>$toDoc&nbsp;&nbsp;");
     print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
-    echo("</th>");
-    
+    echo("&nbsp;&nbsp;</div></th>");
+
+    /*
     if ($showScores){
         if ($showLengthRatio) echo('<th class="vbitext">score<br/>ratio</th>');
         else echo('<th class="vbitext">score<br/>&nbsp;</th>');
     }
     elseif ($showLengthRatio) echo('<th class="vbitext">&nbsp;<br/>ratio</th>');
+    */
+    echo('<th class="vbitext">scores</th>');
     echo("</tr>");
     
     $i = 0;
@@ -843,50 +858,73 @@ function print_vertical_bitext_table($alignments,
         if ($textOK and $showMyRatings){
             $lid = $row['linkID'];
             $rating = $bitext->getMyAlignmentRating($lid);
+            
             echo('<td class="vbitext-rating">');
-            if ($rating)
-                printRatingStars($bitext,$lid);
-            else
-                printStars($bitext->getAverageAlignmentRating($lid));                
-            echo('</td><td class="vbitext-rating">');
-            $value = $rating == 0 ? 50 : $rating;
-            echo("<input type='range' min='1' max='100' value='$value' class='slider' id='slider$lid'>");
-            echo('</td>');
-            echo('<td class="vbitext-rating">');
-            echo("<span id='rating$lid'>$rating</span>");
             $query = make_query(['linkID' => $row['linkID'], 'rating' => -1]);
             if ($rating){
-                echo("&nbsp;<a class='black' style=\"text-decoration: none;\" href=\"$PHP_SELF?$query\">&#x2B07;</a>");
+                echo("<a class='black' style=\"text-decoration: none;\" href=\"$PHP_SELF?$query\">$DeleteSymbol</a>&nbsp;");
             }
             // make sure that the table cell height stays the same: print a invisible white arrow
             else{
-                echo("<span style=\"color: white;\">&#x2B07;</span>");
+                echo("<span style=\"color: white;visibility: hidden;\">$DeleteSymbol</span>&nbsp;");
             }
+            echo("<span id='rating$lid'>$rating</span>");
+            echo('</td>');
+
+            echo('<td class="vbitext-rating">');
+            $value = $rating == 0 ? 50 : $rating;
+            echo("<input type='range' min='1' max='100' value='$value' class='slider' id='slider$lid'>");
             echo('<script>');
             echo("var slider$lid = document.getElementById('slider$lid');");
             echo("slider$lid.oninput = function() {");
             echo("var output = document.getElementById('rating$lid');");
             echo("output.innerHTML = slider$lid.value;");
             echo("output.innerHTML = this.value;");
+            echo('};');
+            echo("slider$lid.onchange = function() {");
+            // echo("var output = document.getElementById('rating$lid');");
+            // echo("output.innerHTML = slider$lid.value;");
+            // echo("output.innerHTML = this.value;");
             echo("var form = document.getElementById('ratingForm');");
             echo("var rating = document.getElementById('rating');");
             echo("var lid = document.getElementById('linkID');");
             echo("rating.value = this.value;");
             echo("lid.value = '$lid';");
+            echo("saveScrollPosition();");
             echo("form.submit();");
             echo('}</script>');
+
             echo('</td>');
+
+            echo('<td class="vbitext-rating">');
+            if ($rating)
+                printRatingStars($bitext,$lid);
+            else
+                printStars($bitext->getAverageAlignmentRating($lid));
+            echo('</td>');
+            
         }
         else{
             $lid = $row['linkID'];
-            echo('<td class="vbitext-rating">');
             $rating = $bitext->getAverageAlignmentRating($lid);
+
+            echo('<td class="vbitext-rating">');
+            echo("<span style=\"color: white;visibility: hidden;\">$DeleteSymbol&nbsp;00</span>");
+            echo('</td>');
+            // echo("<td class='vbitext-rating'><span style=\"color: white;visibility: hidden;\">&#x2B07;</span></td>");
+
+            echo('<td class="vbitext-rating"></td>');
+            
+            echo('<td class="vbitext-rating">');
             if ($rating){
                 printStars($rating);
             }
             // printAverageRatings($bitext,$lid);
             echo('</td>');
-            echo("<td class='vbitext-rating'><span style=\"color: white;\">&#x2B07;</span></td>");
+
+            
+
+            
         }
         echo('</tr>');
 

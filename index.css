@@ -3,7 +3,12 @@ a:link {
   text-decoration: none;
 }
 
+span.right  {text-align: right;}
+span.left   {text-align: left;}
+span.center {text-align: center;}
+
 div.rightalign  {text-align: right; float: right; display: inline;}
+div.leftalign   {text-align: left; float: left; display: inline;}
 
 table.login     {border: none;}
 td.login        {border: none;}
@@ -36,6 +41,23 @@ td {
   padding-left: 5px;
   padding-right: 5px;
 }
+
+table.bitext-matrix {
+    border: 1px dotted;
+    border-collapse: collapse;
+    padding: 5px;
+}
+
+th.bitext-matrix {
+    border: none;
+    padding: 5px;
+}
+
+td.bitext-matrix {
+    border: 1px dotted;
+    padding: 5px;
+}
+
 
 table.vertical-bitext {
   border-collapse: inherit;
@@ -200,6 +222,7 @@ td.vbitext-rating   {
     border: none;
     padding-top: 10px;
     padding-bottom: 30px;
+    text-align: center;
 }
 
 

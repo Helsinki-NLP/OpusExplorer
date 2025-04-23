@@ -296,28 +296,28 @@ function print_langpair_matrix($langpairs){
         echo(' / language matrix<br/><br/>');
     }
     
-    echo('<table><tr><th></th>');
+    echo('<table class="bitext-matrix"><tr><th class="bitext-matrix"></th>');
     foreach ($trglangs as $trglang => $count){
         $trglangname = Locale::getDisplayName($trglang, 'en');
         $trglangs[$trglang] = $trglangname;
         // echo('<th>'.$trglangname.'</th>');
-        echo('<th>'.$trglang.'</th>');
+        echo('<th class="bitext-matrix">'.$trglang.'</th>');
     }
     echo('</tr>');
     foreach ($srclangs as $srclang => $srccount){
         $srclangname = Locale::getDisplayName($srclang, 'en');
         // echo('<tr><th>'.$srclangname.'</th>');
-        echo('<tr><th>'.$srclang.'</th>');
+        echo('<tr><th class="bitext-matrix">'.$srclang.'</th>');
         foreach ($trglangs as $trglang => $trglangname){
             $langpair = "$srclang-$trglang";
             if (array_key_exists($langpair,$langpairs)){
                 $query = make_query(['langpair' => $langpair, 'search' => '']);
-                echo '<td><a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">';
+                echo '<td class="bitext-matrix"><a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">';
                 // echo $langpair;
                 echo 'index</a></td>'."\n";
             }
             else{
-                echo('<td></td>');
+                echo('<td class="bitext-matrix"></td>');
             }
         }
         echo('</tr>');
