@@ -567,6 +567,31 @@ class opusindex{
 
         $DBH = new SQLite3($this->linkStarsDbFile,SQLITE3_OPEN_READONLY);
 
+        $conditions = array();
+        if ($bitextID)  array_push($conditions, 'bitextID='.$bitextID);
+        if ($linkID)    array_push($conditions, 'linkID='.$linkID);
+        if ($user){
+            if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
+            array_push($conditions, "user='$user'");
+        }
+
+        $condition = implode(' AND ',$conditions);
+
+        // echo("SELECT rating FROM ratings WHERE ".$condition);
+
+        if ($user)
+            $results = $DBH->query("SELECT rating FROM ratings WHERE ".$condition);
+        else
+            $results = $DBH->query("SELECT AVG(rating) FROM ratings WHERE ".$condition);
+            
+        if ($results){
+            while ($row = $results->fetchArray(SQLITE3_NUM)) {
+                return $row[0];
+            }
+        }
+        return 0;
+
+        /*
         if ($user){
             if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
             $results = $DBH->query("SELECT rating FROM ratings WHERE bitextID=$bitextID AND linkID=$linkID AND user='$user'");
@@ -585,6 +610,7 @@ class opusindex{
             }
         }
         return 0;
+        */
     }
 
     public function getBitextRating($bitextID,$user=''){
@@ -642,7 +668,7 @@ class opusindex{
         if (file_exists($this->linkStarsDbFile) ){
             $DBH = new SQLite3($this->linkStarsDbFile);
             $condition = "linkID=$linkID";
-            if ($user) $condition .= "AND user='$user'";
+            if ($user) $condition .= " AND user='$user'";
             // echo("DELETE FROM ratings WHERE $condition");
             $DBH->exec("DELETE FROM ratings WHERE $condition");
             $DBH->close();

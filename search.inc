@@ -27,10 +27,11 @@ function print_search_form($langpair, $corpus='', $version='', $fromDoc='', $toD
     elseif ($allowSourceSearch) echo('<button type="submit" name="action" value="search source">search</button>');
     elseif ($allowTargetSearch) echo('<button type="submit" name="action" value="search target">search</button>');
 
-    echo('</form>');
+    echo('</form> ');
 }
 
 
+/*
 
 function search_navigation($searchquery, $offset, $showMaxAlignments){
 
@@ -92,7 +93,7 @@ function search_display_options($searchquery){
     }
 }
 
-
+*/
 
 
 
@@ -108,7 +109,10 @@ function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $order
     $bitextID = $bitext->id();
     
     $alignments = $bitext->search($searchquery, $searchside, $limit, $offset, $orderByLinkID);
+    print_bitext_table($bitext, $alignments, $offset);
+    return;
 
+    /*
     search_navigation($searchquery, $offset, $limit);
     echo('<div class="rightalign">');
     search_display_options($searchquery);
@@ -226,6 +230,7 @@ function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $order
     if ($shown < $limit){
         echo '<script>var x = document.getElementById("next");x.style.visibility = "hidden";</script>';
     }
+    */
 }
 
     

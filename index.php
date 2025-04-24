@@ -109,6 +109,7 @@ $resourceView = get_param('resourceView','langMatrix');
 
 $allowEdit = $user != 'guest' ? in_array($corpus, $ALLOW_EDIT) : 0;
 // $allowEdit = 1;
+$showAlignTypes = get_param('showAlignTypes',$SHOW_ALIGN_TYPES);
 $allowOtherAlignTypes = in_array($corpus, $ALLOW_EDIT);
 $allowSortLinks = in_array($corpus, $ALLOW_EDIT);
 
@@ -139,6 +140,7 @@ if ($srclang && $trglang){
     
     if ($rating){
         $bitext->addAlignmentRating($bitextID,$linkID,$rating);
+        // echo("add rating $bitextID,$linkID,$rating");
         delete_param('linkID');
         delete_param('rating');
     }
@@ -149,7 +151,6 @@ if ($srclang && $trglang){
 /////////////////////////////////////////////////////////////////
 
 print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc,$toDoc, $searchquery, $alignType);
-// echo('</br><hr>');
 
 if ($searchquery){
     $searchlimit = get_param('limit',10);
