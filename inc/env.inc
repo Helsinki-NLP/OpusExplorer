@@ -1,8 +1,6 @@
 <?php // -*-php-*-
 
 
-// $DB_DIR = '/media/OpusIndex/';
-// $DB_DIR = '/media/OPUS-MT/OpusIndex/';
 // $DB_DIR = '/media/OPUS/OpusIndex/';
 $DB_DIR = '/media/OPUS/synOpusIndex/';
 

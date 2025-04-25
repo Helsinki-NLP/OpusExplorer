@@ -17,6 +17,7 @@ class opusindex{
     protected $bitextDbFile;
     protected $linkDbFile;
     protected $linkStarsDbFile;
+    protected $linkRatingsDbFile;
     protected $userDataExists;
 
     protected $srcDBH;
@@ -43,7 +44,8 @@ class opusindex{
         $this->trgIdxDbFile    = $this->__find_langidx_dbfile($dbDir,$trglang);
         
         $this->linkDbFile      = $this->__find_link_dbfile($dbDir,$langpair);
-        $this->linkStarsDbFile = $this->__find_ratings_dbfile($dbDir,$langpair);
+        $this->linkRatingsDbFile = $this->__find_ratings_dbfile($dbDir,$langpair);
+        $this->linkStarsDbFile = $this->__find_stars_dbfile($dbDir,$langpair);
         $this->bitextDbFile    = $this->__find_bitext_dbfile($dbDir,$langpair);
         $this->corpusDbFile    = $this->__find_corpus_dbfile($dbDir);
         
@@ -89,8 +91,12 @@ class opusindex{
             $this->linksDBH->close();
             $this->linksDBH = new SQLite3($this->linkDbFile,SQLITE3_OPEN_READONLY);
 
+            $dbfile = $this->dbDir.implode('/',[$this->user,$this->langpair.'.ratings.db']);
+            $this->linkRatingsDbFile = $dbfile;
+
             $dbfile = $this->dbDir.implode('/',[$this->user,$this->langpair.'.stars.db']);
             $this->linkStarsDbFile = $dbfile;
+
         }
     }
 
@@ -98,13 +104,13 @@ class opusindex{
 
         $langpair = $this->langpair;
         $linkDbFile = $this->linkDbFile;
-        $linkStarsDbFile = $this->linkStarsDbFile;
+        $linkRatingsDbFile = $this->linkRatingsDbFile;
     
         $USER_DB_DIR = $this->dbDir.$this->user.'/';
         if (! is_dir($USER_DB_DIR)) mkdir($USER_DB_DIR);
 
         $userLinkDbFile = $USER_DB_DIR.$langpair.'.db';
-        $userLinkStarsDbFile = $USER_DB_DIR.$langpair.'.stars.db';
+        $userLinkRatingsDbFile = $USER_DB_DIR.$langpair.'.ratings.db';
 
         if (! file_exists($userLinkDbFile) ){
             $DBH = new SQLite3($userLinkDbFile);
@@ -169,22 +175,22 @@ class opusindex{
             $DBH->close();
         }
 
-        if (! file_exists($userLinkStarsDbFile) ){
-            $DBH = new SQLite3($userLinkStarsDbFile);
+        if (! file_exists($userLinkRatingsDbFile) ){
+            $DBH = new SQLite3($userLinkRatingsDbFile);
             $DBH->exec('CREATE TABLE IF NOT EXISTS ratings (bitextID INTEGER, linkID INTEGER, user TEXT, rating INTEGER)');
             $DBH->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_ratings ON ratings (bitextID, linkID, user)');
-            $DBH->exec("ATTACH DATABASE '".$linkStarsDbFile."' AS org");
+            $DBH->exec("ATTACH DATABASE '".$linkRatingsDbFile."' AS org");
             $DBH->exec("INSERT OR IGNORE INTO ratings SELECT * FROM org.ratings WHERE bitextID=$bitextID");
             $DBH->exec('PRAGMA journal_mode=WAL');
             $DBH->close();
         }
         else{
-            $DBH = new SQLite3($userLinkStarsDbFile);
+            $DBH = new SQLite3($userLinkRatingsDbFile);
             $results = $DBH->query("SELECT COUNT(*) FROM ratings WHERE bitextID=$bitextID");
             if ($results){
                 $row = $results->fetchArray(SQLITE3_NUM);
                 if (! $row[0] ){
-                    $DBH->exec("ATTACH DATABASE '".$linkStarsDbFile."' AS org");
+                    $DBH->exec("ATTACH DATABASE '".$linkRatingsDbFile."' AS org");
                     $DBH->exec("INSERT OR IGNORE INTO ratings SELECT * FROM org.ratings WHERE bitextID=$bitextID");
                 }
             }
@@ -193,7 +199,7 @@ class opusindex{
 
         $this->$userDataExists = true;
         $this->linkDbFile = $userLinkDbFile;
-        $this->linkStarsDbFile = $userLinkStarsDbFile;
+        $this->linkRatingsDbFile = $userLinkRatingsDbFile;
         $this->linksDBH = new SQLite3($userLinkDbFile,SQLITE3_OPEN_READONLY);
     
         return $linkDbFile;
@@ -563,6 +569,54 @@ class opusindex{
 
 
     public function getAlignmentRating($bitextID,$linkID,$user=''){
+        
+        // if (! file_exists($this->linkRatingsDbFile) ) return 0;
+        if (! file_exists($this->linkRatingsDbFile) ){
+            $stars = $this->getAlignmentStars($bitextID,$linkID,$user);
+            if ($stars > 0 && $stars <=5) return 20*$stars-10;
+            return $stars;
+        }
+        
+        $DBH = new SQLite3($this->linkRatingsDbFile,SQLITE3_OPEN_READONLY);
+
+        $conditions = array();
+        if ($bitextID)  array_push($conditions, 'bitextID='.$bitextID);
+        if ($linkID)    array_push($conditions, 'linkID='.$linkID);
+        if ($user){
+            if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
+            array_push($conditions, "user='$user'");
+        }
+
+        $condition = implode(' AND ',$conditions);
+        // echo("SELECT rating FROM ratings WHERE ".$condition);
+
+        if ($user)
+            $results = $DBH->query("SELECT rating FROM ratings WHERE ".$condition);
+        else
+            $results = $DBH->query("SELECT AVG(rating) FROM ratings WHERE ".$condition);
+            
+        if ($results){
+            while ($row = $results->fetchArray(SQLITE3_NUM)) {
+                if ($row[0]){
+                    $DBH->close();
+                    return $row[0];
+                }
+            }
+        }
+
+        // try get stars instead of ranking
+        
+        $DBH->close();
+        $stars = $this->getAlignmentStars($bitextID,$linkID,$user);
+        if ($stars > 0 && $stars <= 5) return 20*$stars-10;
+        return $stars;
+    }
+
+    
+    // retrieve 5-value stars instead of 0-100 ratings
+    // (compatibility with older version of the explorer interface)
+
+    public function getAlignmentStars($bitextID,$linkID,$user=''){
         if (! file_exists($this->linkStarsDbFile) ) return 0;
 
         $DBH = new SQLite3($this->linkStarsDbFile,SQLITE3_OPEN_READONLY);
@@ -576,7 +630,6 @@ class opusindex{
         }
 
         $condition = implode(' AND ',$conditions);
-
         // echo("SELECT rating FROM ratings WHERE ".$condition);
 
         if ($user)
@@ -586,36 +639,53 @@ class opusindex{
             
         if ($results){
             while ($row = $results->fetchArray(SQLITE3_NUM)) {
-                return $row[0];
-            }
-        }
-        return 0;
-
-        /*
-        if ($user){
-            if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
-            $results = $DBH->query("SELECT rating FROM ratings WHERE bitextID=$bitextID AND linkID=$linkID AND user='$user'");
-            if ($results){
-                while ($row = $results->fetchArray(SQLITE3_NUM)) {
+                if ($row[0]){
+                    $DBH->close();
                     return $row[0];
                 }
             }
         }
-        else{
-            $results = $DBH->query("SELECT AVG(rating) FROM ratings WHERE bitextID=$bitextID AND linkID=$linkID");
-            if ($results){
-                while ($row = $results->fetchArray(SQLITE3_NUM)) {
-                    return $row[0];
-                }
-            }
-        }
+        $DBH->close();
         return 0;
-        */
     }
 
+
     public function getBitextRating($bitextID,$user=''){
-        if (! file_exists($this->linkStarsDbFile) ) return 0;
         if (! $bitextID) return 0;
+        // if (! file_exists($this->linkRatingsDbFile) ) return 0;
+        if (! file_exists($this->linkRatingsDbFile) ){
+            $stars = $this->getBitextStars($bitextID,$user);
+            if ($stars > 0 && $stars <=5) return 20*$stars-10;
+            return $stars;
+        }
+            
+        $DBH = new SQLite3($this->linkRatingsDbFile,SQLITE3_OPEN_READONLY);
+
+        $condition = 'bitextID='.$bitextID;
+        if ($user){
+            if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
+            $condition .= " AND user='".$user."'";
+        }
+        // echo $this->linkRatingsDbFile."SELECT AVG(rating) FROM ratings WHERE ".$condition.'<br/>';
+        $results = $DBH->query("SELECT AVG(rating) FROM ratings WHERE ".$condition);
+        if ($results){
+            while ($row = $results->fetchArray(SQLITE3_NUM)) {
+                if ($row[0]){
+                    $DBH->close();
+                    return $row[0];
+                }
+            }
+        }
+        $DBH->close();
+        $stars = $this->getBitextStars($bitextID,$user);
+        if ($stars > 0 && $stars <=5) return 20*$stars-10;
+        return $stars;
+    }
+
+
+    public function getBitextStars($bitextID,$user=''){
+        if (! $bitextID) return 0;
+        if (! file_exists($this->linkStarsDbFile) ) return 0;
         $DBH = new SQLite3($this->linkStarsDbFile,SQLITE3_OPEN_READONLY);
 
         $condition = 'bitextID='.$bitextID;
@@ -623,10 +693,11 @@ class opusindex{
             if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
             $condition .= " AND user='".$user."'";
         }
-        // echo $this->linkStarsDbFile."SELECT AVG(rating) FROM ratings WHERE ".$condition.'<br/>';
+        // echo $this->linkRatingsDbFile."SELECT AVG(rating) FROM ratings WHERE ".$condition.'<br/>';
         $results = $DBH->query("SELECT AVG(rating) FROM ratings WHERE ".$condition);
         if ($results){
             while ($row = $results->fetchArray(SQLITE3_NUM)) {
+                $DBH->close();
                 return $row[0];
             }
         }
@@ -640,18 +711,18 @@ class opusindex{
         // for guest users: add the referring IP address
         if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
         
-        // echo("add rating to $linkStarsDbFile");
-        // if (! file_exists($this->linkStarsDbFile) ){
-        if (! $this->linkStarsDbFile ){
-            $this->linkStarsDbFile = $this->dbDir.$this->langpair.'.stars.db';
-            $DBH = new SQLite3($this->linkStarsDbFile);
+        // echo("add rating to $linkRatingsDbFile");
+        // if (! file_exists($this->linkRatingsDbFile) ){
+        if (! $this->linkRatingsDbFile ){
+            $this->linkRatingsDbFile = $this->dbDir.$this->langpair.'.ratings.db';
+            $DBH = new SQLite3($this->linkRatingsDbFile);
             
             $DBH->exec('CREATE TABLE IF NOT EXISTS ratings (bitextID INTEGER,linkID INTEGER,user TEXT,rating INTEGER)');
             $DBH->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_ratings ON ratings (bitextID, linkID, user)');
             $DBH->exec('PRAGMA journal_mode=WAL');
         }
         else{
-            $DBH = new SQLite3($this->linkStarsDbFile);
+            $DBH = new SQLite3($this->linkRatingsDbFile);
         }
         $DBH->exec("UPDATE OR IGNORE ratings SET rating=$rating 
                     WHERE bitextID=$bitextID AND linkID=$linkID AND user='$user'");
@@ -665,8 +736,8 @@ class opusindex{
 
         if ($user == 'guest') $user .= clean_input($_SERVER['REMOTE_ADDR']);
                 
-        if (file_exists($this->linkStarsDbFile) ){
-            $DBH = new SQLite3($this->linkStarsDbFile);
+        if (file_exists($this->linkRatingsDbFile) ){
+            $DBH = new SQLite3($this->linkRatingsDbFile);
             $condition = "linkID=$linkID";
             if ($user) $condition .= " AND user='$user'";
             // echo("DELETE FROM ratings WHERE $condition");
@@ -899,17 +970,29 @@ class opusindex{
     }
 
     protected function __find_ratings_dbfile($dir,$langpair){
-        $dbfile = $dir.$langpair.'.stars.db';
+        $dbfile = $dir.$langpair.'.ratings.db';
         if (file_exists($dbfile)) return $dbfile;
         return '';
     }
 
     protected function __find_user_ratings_dbfile($dir,$user,$langpair){
-        $linkdbfile = $dir.implode('/',[$user,$langpair.'.stars.db']);
+        $linkdbfile = $dir.implode('/',[$user,$langpair.'.ratings.db']);
         if (file_exists($linkdbfile)) return $dbfile;
         return '';
     }
 
+    protected function __find_stars_dbfile($dir,$langpair){
+        $dbfile = $dir.$langpair.'.stars.db';
+        if (file_exists($dbfile)) return $dbfile;
+        return '';
+    }
+
+    protected function __find_user_stars_dbfile($dir,$user,$langpair){
+        $linkdbfile = $dir.implode('/',[$user,$langpair.'.stars.db']);
+        if (file_exists($linkdbfile)) return $dbfile;
+        return '';
+    }
+    
     protected function __find_bitext_dbfile($dir,$langpair){
         $dbfile = $dir.implode('/',['linkdb',$langpair.'.db']);
         if (file_exists($dbfile)) return $dbfile;

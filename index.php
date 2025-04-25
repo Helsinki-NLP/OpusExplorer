@@ -25,7 +25,7 @@ if (isset($_GET['logout'])){
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="index.css?v36" type="text/css">
+  <link rel="stylesheet" href="index.css?v38" type="text/css">
   <script type="text/javascript">
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
@@ -47,13 +47,13 @@ if (isset($_GET['logout'])){
 <body>
 <?php
 
-include('env.inc');
-include('users.inc');
-include('opus.inc');
-include('opusindex.inc');
-include('bitexts.inc');
-include('ratings.inc');
-include('search.inc');
+include('inc/env.inc');
+include('inc/users.inc');
+include('inc/opus.inc');
+include('inc/opusindex.inc');
+include('inc/bitexts.inc');
+include('inc/ratings.inc');
+include('inc/search.inc');
 
 
 

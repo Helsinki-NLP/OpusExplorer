@@ -45,7 +45,7 @@ function get_alignment_dbfile($langpair){
 
 function get_ratings_dbfile($langpair){
     global $DB_DIR;
-    $dbfile = $DB_DIR.$langpair.'.stars.db';
+    $dbfile = $DB_DIR.$langpair.'.ratings.db';
     if (file_exists($dbfile)) return $dbfile;
     return '';
 }
@@ -349,7 +349,7 @@ function set_link_db($bitextID){
     
     $USER_DB_DIR = $DB_DIR.$_SESSION['user'].'/';
     $userLinkDbFile = $USER_DB_DIR.$langpair.'.db';
-    $userAlgStarsDbFile = $USER_DB_DIR.$langpair.'.stars.db';
+    $userAlgStarsDbFile = $USER_DB_DIR.$langpair.'.ratings.db';
 
     if (is_dir($USER_DB_DIR)){
         if (file_exists($userLinkDbFile) ){
@@ -386,7 +386,7 @@ function initialize_user_link_db($bitextID){
     if (! is_dir($USER_DB_DIR)) mkdir($USER_DB_DIR);
 
     $userAlgDbFile = $USER_DB_DIR.$langpair.'.db';
-    $userAlgStarsDbFile = $USER_DB_DIR.$langpair.'.stars.db';
+    $userAlgStarsDbFile = $USER_DB_DIR.$langpair.'.ratings.db';
 
     if (! file_exists($userAlgDbFile) ){
         $DBH = new SQLite3($userAlgDbFile);

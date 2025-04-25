@@ -25,13 +25,13 @@ td {
 <?php
 
 $pages = array(
-    'get started' => 'OpusExplorer-login.svg',
-    'browsing resource list' => 'OpusExplorer-resourcelist.svg',
-    'bitext navigation 1' => 'OpusExplorer-bitexts1.svg',
-    'bitext navigation 2' => 'OpusExplorer-bitexts2.svg',
-    'vertical alignment' => 'OpusExplorer-vertical.svg',
-    'user ratings' => 'OpusExplorer-rating.svg',
-    'editing alignments' => 'OpusExplorer-editmode.svg'
+    'get started' => 'doc/OpusExplorer-login.svg',
+    'browsing resource list' => 'doc/OpusExplorer-resourcelist.svg',
+    'bitext navigation 1' => 'doc/OpusExplorer-bitexts1.svg',
+    'bitext navigation 2' => 'doc/OpusExplorer-bitexts2.svg',
+    'vertical alignment' => 'doc/OpusExplorer-vertical.svg',
+    'user ratings' => 'doc/OpusExplorer-rating.svg',
+    'editing alignments' => 'doc/OpusExplorer-editmode.svg'
 );
 
 $page = 'get started';

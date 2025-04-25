@@ -60,6 +60,7 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
             set_param('bitextID',$bitextID);
             print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $searchquery);
         }
+        // print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $searchquery);
     }
     elseif ($corpus && $version){
         $query = make_query(['version' => '', 'fromDoc' => '', 'toDoc' => '', 'offset' => 0,
@@ -102,12 +103,18 @@ function print_document_list($bitext, $offset=0, $fromDocQuery='', $toDocQuery='
     //bitext_rating_options();
     //bitext_average_rating_option();
     echo('<br/><br/><table class="doclist">');
+    echo '<tr><td class="doclist"></td>';
+    echo '<td class="docliststars">average rating</td>';
+    echo '<td class="docliststars">my average rating</td>';
+    echo '</td></tr>';
+    /*
     echo '<tr><td class="doclist"></td><td class="docliststars">';
     bitext_user_rating_option();
     echo '</td>';
     echo '<td class="docliststars">';
     bitext_average_rating_option();
     echo '</td></tr>';
+    */
     
     $count = 0;
     $differentNames = 0;
@@ -138,6 +145,22 @@ function print_document_list($bitext, $offset=0, $fromDocQuery='', $toDocQuery='
             echo '<td class="doclist">'.$link.$row['toDoc'].'</a></td>';
         }
         // echo '<tr><td class="doclist"><a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$docpair.'</a></td>';
+
+        echo('<td class="docliststars">');
+        $rating = $bitext->getAverageBitextRating($bitextID);
+        if ($rating){
+            printStars($rating);
+        }
+        echo('</td>');
+
+        echo('<td class="docliststars">');
+        $rating = $bitext->getMyBitextRating($bitextID);
+        if ($rating){
+            printStars($rating);
+        }
+        echo('</td></tr>');
+
+        /*        
         echo('<td class="docliststars">');
         if ($showMyRatings){
             $rating = $bitext->getMyBitextRating($bitextID);
@@ -155,6 +178,7 @@ function print_document_list($bitext, $offset=0, $fromDocQuery='', $toDocQuery='
             }
         }
         echo("</td></tr>\n");
+        */
     }
     if ($count >= $showMaxDocuments || $fromDocQuery || $toDocQuery){
         // $queryValue = $fromDocQuery ? $fromDocQuery : $bitext->srclang.'/%';
