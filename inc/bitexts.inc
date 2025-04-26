@@ -373,7 +373,12 @@ class documentPairs extends corpora{
 class alignments extends documentPairs {
     
     public function fetch($type, $limit, $offset){
-        $this->searchResults = $this->index->getAlignments($this->bitext->id(), $type, $limit, $offset);
+        if ($type == 'rated')
+            $this->searchResults = $this->index->getRatedAlignments($this->bitext->id(),
+                                                                    0, 0, $type, $limit, $offset);
+        else
+            $this->searchResults = $this->index->getAlignments($this->bitext->id(),
+                                                               $type, $limit, $offset);
     }
 
     public function nextLink(){
@@ -412,6 +417,15 @@ class alignments extends documentPairs {
         return false;
     }
 }
+
+
+class ratedAlignments extends alignments {
+    
+    public function fetch($type, $limit, $offset){
+        $this->searchResults = $this->index->getRatedAlignments($this->bitext->id(), $type, $limit, $offset);
+    }
+}
+
 
 class alignmentSearchResult extends alignments {
 
@@ -731,56 +745,18 @@ function print_bitext_table($bitext, $alignments, $offset=0){
 
 
         if ($tableStyle == 'edit' && $allowEdit){
-            /*
-            echo('<div class="rightalign">');
-            bitext_score_options();
-            bitext_user_rating_option();
-            bitext_average_rating_option();
-            bitext_display_options();
-            echo('</div></br><hr>');
-            bitext_edit_links($bitext, $alignType);
-            */
             $shown = print_editable_bitext_table($alignments,
                                                  $showScores, $showLengthRatio,
                                                  $showMyRatings, $showRatings);
         }
         
         elseif ($tableStyle == 'vertical'){
-            /*
-            echo('<div class="rightalign">');
-            bitext_display_options();
-            echo('</div></br><hr>');
-            echo('<div class="rightalign">');
-            if (! $searchquery){
-                if ($showAlignTypes){
-                    bitext_aligntype_links($bitext, $alignType);
-                }
-                bitext_aligntype_menu();
-                bitext_edit_links($bitext, $alignType);
-            }
-            bitext_rating_options();
-            echo('</div><br/>');
-            */
             $shown = print_vertical_bitext_table($alignments,
                                                  $showScores, $showLengthRatio,
                                                  $showMyRatings, $showRatings);
         }
         
         else{
-            /*
-            echo('<div class="rightalign">');
-            bitext_score_options();
-            if (! $searchquery) bitext_aligntype_menu();
-            bitext_rating_options();
-            bitext_display_options();
-            echo('</div></br><hr>');
-            if (! $searchquery) bitext_edit_links($bitext, $alignType);
-            if (! $searchquery && $showAlignTypes){
-                echo('<div class="rightalign">');
-                bitext_aligntype_links($bitext, $alignType);
-                echo('</div><br/>');
-            }
-            */
             $shown = print_horizontal_bitext_table($alignments,
                                                    $showScores, $showLengthRatio,
                                                    $showMyRatings, $showRatings);
@@ -1094,9 +1070,6 @@ function print_vertical_bitext_table($alignments,
             echo("output.innerHTML = this.value;");
             echo('};');
             echo("slider$lid.onchange = function() {");
-            // echo("var output = document.getElementById('rating$lid');");
-            // echo("output.innerHTML = slider$lid.value;");
-            // echo("output.innerHTML = this.value;");
             echo("var form = document.getElementById('ratingForm');");
             echo("var rating = document.getElementById('rating');");
             echo("var lid = document.getElementById('linkID');");

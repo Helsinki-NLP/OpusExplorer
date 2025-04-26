@@ -454,6 +454,8 @@ class opusindex{
 
         $conditions = "bitextID=$bitextID";
         $orderby = ' ORDER BY linkID ';
+        $limit = '';
+        
         if ($type){
             // TODO: order by random becomes really slow on bigger queries!
             // --> try subqueries where we limit/offset search to some bigger value (maybe randomize that value)
@@ -567,6 +569,30 @@ class opusindex{
         }
     }
 
+    public function getRatedAlignments($bitextID=0, $minRating=0, $maxRating=0, $type='all', $limit=10, $offset=0){
+
+        if (! file_exists($this->linkRatingsDbFile) ) return 0;
+        $DBH = new SQLite3($this->linkRatingsDbFile,SQLITE3_OPEN_READONLY);
+        $linkDB = $this->linkDbFile;
+        $DBH->exec("ATTACH DATABASE '$linkDB' AS algdb");
+
+        $conditions = array();
+        array_push($conditions,'rating>'.$minRating);
+        if ($maxRating) array_push($conditions,'rating<'.$maxRating);
+        if ($bitextID)  array_push($conditions, 'links.bitextID='.$bitextID);
+        
+        if (count($conditions))
+            $condition = ' WHERE '.implode(' AND ',$conditions);
+
+        $limitstr  = $limit  ? " LIMIT ".$limit    : '';
+        $offsetstr = $offset ? " OFFSET ".$offset  : '';
+
+        return $DBH->query("SELECT links.bitextID as bitextID,links.linkID as linkID,srcIDs,trgIDs,alignType,alignerScore,user,rating 
+                            FROM ratings 
+                            INNER JOIN algdb.links AS links ON links.rowid=ratings.linkID 
+                            $condition$limitstr$offsetstr");
+
+    }
 
     public function getAlignmentRating($bitextID,$linkID,$user=''){
         
