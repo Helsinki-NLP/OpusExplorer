@@ -25,15 +25,44 @@ if (isset($_GET['logout'])){
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="index.css?v38" type="text/css">
+  <link rel="stylesheet" href="index.css?v43" type="text/css">
   <script type="text/javascript">
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
 	}
-    document.addEventListener("DOMContentLoaded", function(event) { 
-            var scrollpos = localStorage.getItem('scrollpos');
-            if (scrollpos) window.scrollTo(0, scrollpos);
-            localStorage.setItem('scrollpos', 0);
+    function toggleElement(id) {
+        var x = document.getElementById(id);
+        if (x.style.display === "none") {
+            x.style.display = "block";
+        } else {
+            x.style.display = "none";
+        }
+    }
+    function toggleVisibility(id) {
+        var x = document.getElementById(id);
+        if (x.style.visibility === "collapse") {
+            x.style.visibility = "visible";
+            localStorage.setItem(id, 'visible');
+        } else {
+            x.style.visibility = "collapse";
+            localStorage.setItem(id, 'collapse');
+        }
+    }
+    document.addEventListener("DOMContentLoaded", function(event) {
+        var scrollpos = localStorage.getItem('scrollpos');
+        if (scrollpos) window.scrollTo(0, scrollpos);
+        localStorage.setItem('scrollpos', 0);
+        for (var i = 0; i < localStorage.length; i++){
+            var key = localStorage.key(i);
+            if (localStorage.getItem(key) === "hidden"){
+                var x = document.getElementById(key);
+                x.style.visibility = "hidden";
+            }
+            else if (localStorage.getItem(key) === "collapse"){
+                var x = document.getElementById(key);
+                x.style.visibility = "collapse";
+            }
+        }
     });
     window.onbeforeunload = function(e) {
         localStorage.setItem('scrollpos', window.scrollY);
@@ -88,6 +117,7 @@ $showRatings = get_param('showRatings',1);
 $showMyRatings = get_param('showMyRatings',0);
 $showModified = get_param('showModified',1);
 // $showLatest = get_param('showLatest',0);
+$showLatest = 0;
 
 $showMaxAlignments = get_param('showMaxAlignments',$SHOW_ALIGNMENTS_LIMIT);
 $showMaxDocuments = get_param('showMaxDocuments',$DOCUMENT_LIST_LIMIT);
@@ -153,10 +183,8 @@ if ($srclang && $trglang){
 print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc,$toDoc, $searchquery, $alignType);
 
 if ($searchquery){
-    $searchlimit = get_param('limit',10);
-    $searchoffset = get_param('offset',0);
     $searchside = get_param('action','search source');
-    search($searchquery, $searchside, $bitext, $searchlimit, $searchoffset);
+    search($searchquery, $searchside, $bitext, $showMaxAlignments, $offset);
 }
 elseif ($srclang && $trglang){
     if ($corpus && $version){

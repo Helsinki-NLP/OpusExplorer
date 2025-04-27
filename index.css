@@ -72,6 +72,10 @@ th.vertical-bitext {
 }
 
 
+span.bitext-options {
+    visibility: collapse;
+}
+
 th.bitext   {
     border: none;
 }

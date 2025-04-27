@@ -6,15 +6,15 @@ function bitext_rating_options(){
 
     if ($showMyRatings){
         $query = make_query(['showMyRatings' => 0, 'showRatings' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">no&nbsp;rating</a>');
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">my&nbsp;rating</a>');
     }
     elseif ($showRatings){
         $query = make_query(['showMyRatings' => 1, 'showRatings' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">my&nbsp;rating</a>');
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">average&nbsp;rating</a>');
     }
     else{
         $query = make_query(['showMyRatings' => 0, 'showRatings' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">avg&nbsp;rating</a>');
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>hide&nbsp;rating</strike></a>');
     }
 }
 
