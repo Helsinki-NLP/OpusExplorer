@@ -137,16 +137,17 @@ $resourceView = get_param('resourceView','langMatrix');
 ## - allow to search for other alignment types (expensive search for large doc's!)
 */
 
-$allowEdit = $user != 'guest' ? in_array($corpus, $ALLOW_EDIT) : 0;
 // $allowEdit = 1;
-$showAlignTypes = get_param('showAlignTypes',$SHOW_ALIGN_TYPES);
+$allowEdit            = $user != 'guest' ? in_array($corpus, $ALLOW_EDIT) : 0;
+$showAlignTypes       = get_param('showAlignTypes',$SHOW_ALIGN_TYPES);
 $allowOtherAlignTypes = in_array($corpus, $ALLOW_EDIT);
-$allowSortLinks = in_array($corpus, $ALLOW_EDIT);
+$allowRandomLinks     = in_array($corpus, $ALLOW_EDIT);
+$allowSortLinks       = in_array($corpus, $ALLOW_EDIT);
 
 $orderByLinkID = get_param('sortLinkIDs',0);
-$searchquery = filter_var(get_param('search',''),FILTER_SANITIZE_STRING);
-$fromDocQuery = filter_var(get_param('fromDocQuery',''),FILTER_SANITIZE_STRING);
-$toDocQuery = filter_var(get_param('toDocQuery',''),FILTER_SANITIZE_STRING);
+$searchquery   = filter_var(get_param('search',''),FILTER_SANITIZE_STRING);
+$fromDocQuery  = filter_var(get_param('fromDocQuery',''),FILTER_SANITIZE_STRING);
+$toDocQuery    = filter_var(get_param('toDocQuery',''),FILTER_SANITIZE_STRING);
 
 
 /////////////////////////////////////////////////////////////////

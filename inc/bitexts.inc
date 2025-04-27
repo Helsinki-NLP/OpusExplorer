@@ -526,7 +526,7 @@ function bitext_edit_links($bitext){
 
 function bitext_aligntype_links($bitext, $selectedAlignType=''){
     global $tableStyle, $showModified, $allowEdit, $showEmpty;
-    global $ALIGN_TYPES, $allowOtherAlignTypes;
+    global $ALIGN_TYPES, $allowOtherAlignTypes, $allowRandomLinks;
 
     if ($tableStyle == 'edit') return;
 
@@ -539,6 +539,7 @@ function bitext_aligntype_links($bitext, $selectedAlignType=''){
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">standard</a>');
     }
     foreach ($ALIGN_TYPES as $type){
+        if ($type == 'random' && ! $allowRandomLinks) continue;
         if ($selectedAlignType != $type){
             $query = make_query(['aligntype' => $type, 'offset' => 0]);
             echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$type.'</a>');
