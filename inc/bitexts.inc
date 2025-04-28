@@ -640,6 +640,20 @@ function bitext_display_options(){
 }
 
 
+function bitext_search_options(){
+    global $showSearch;
+    // echo(' / <a class="clickable" onclick="toggleSearchForm();">search</a>');
+    if ($showSearch){
+        $query = make_query(['showSearch' => 0]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">search</a>');
+    }
+    else{
+        $query = make_query(['showSearch' => 1]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>search</strike></a>');
+    }
+
+}
+
 function bitext_score_options(){
     global $showScores, $showLengthRatio;
 
@@ -758,13 +772,16 @@ function print_bitext_table($bitext, $alignments, $offset=0){
         $showStart = $searchquery ? true : false;
         bitext_navigation($offset, $showMaxAlignments, $showStart);
         echo('<div class="rightalign">');
+        bitext_search_options();
         bitext_display_options();
         echo('</div></br><hr>');
         // echo('<div class="rightalign">');
         bitext_score_options();
         bitext_rating_options();
         if (! $searchquery){
-            echo(' / <span id="clickable" onclick="toggleVisibility(\'bitext-options\');">.&nbsp;.&nbsp;.</span>');
+            // echo(' / <a class="clickable" onclick="toggleElement(\'bitext-options\');">.&nbsp;.&nbsp;.</a>');
+            // echo(' / <a class="clickable" onclick="toggleClassVisibility(\'search-form\');">search</a>');
+            echo(' / <a class="clickable" onclick="toggleVisibility(\'bitext-options\');">.&nbsp;.&nbsp;.</a>');
             echo('<span id="bitext-options">');
             bitext_edit_links($bitext, $alignType);
             if ($tableStyle != 'edit') bitext_aligntype_links($bitext, $alignType);
@@ -1059,7 +1076,8 @@ function print_vertical_bitext_table($alignments,
         echo '</form></p>';
     }
 
-    echo('<p><table class="vbitext">');
+    /*
+    echo('<p><table class="search-form">');
     if ($fromDoc){
         echo("<tr><th class='vbitext-search'>$fromDoc</th><th class='vbitext-search'>");
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
@@ -1071,11 +1089,18 @@ function print_vertical_bitext_table($alignments,
         echo("</th></tr>");
     }
     echo("</table>");
+    */
     
     echo('<p><table class="vbitext">');
     
     // echo("<tr><th class='vbitext-docname'>source<br/>target</th>");
-    echo("<tr><th class='vbitext'>IDs</th>");
+    echo("<tr><th class='vbitext'>IDs</th><th class='vbitext'>");
+    if ($fromDoc && $toDoc){
+        echo($fromDoc.'&nbsp;// '.$toDoc.'&nbsp;&nbsp;');
+        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 1);
+    }
+    echo("</th>");
+    
     /*
     echo("<th><div class='leftalign'>&nbsp;&nbsp;");
     echo("$fromDoc&nbsp;&nbsp;");
@@ -1094,7 +1119,7 @@ function print_vertical_bitext_table($alignments,
     elseif ($showLengthRatio) echo('<th class="vbitext">&nbsp;<br/>ratio</th>');
     */
 
-    echo("<th class='vbitext'></th>");
+    // echo("<th class='vbitext'></th>");
     if ($showLengthRatio || $showScores)
         echo('<th class="vbitext">scores</th>');
     echo("</tr>");

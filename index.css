@@ -3,6 +3,11 @@ a:link {
   text-decoration: none;
 }
 
+a:hover {
+    background-color: #eeeeee;
+}
+
+
 span.right  {text-align: right;}
 span.left   {text-align: left;}
 span.center {text-align: center;}
@@ -71,8 +76,15 @@ th.vertical-bitext {
     border-spacing: 0 0;
 }
 
+a.clickable {
+    color: blue;
+}
 
-span.bitext-options {
+a.clickable:hover {
+    background-color: #eeeeee;
+}
+
+#bitext-options {
     visibility: collapse;
 }
 
@@ -140,6 +152,20 @@ tr.vbitext-trg   {
 }
 */
 
+/*
+table.search-form {
+    border: none;
+    border-collapse: separate;
+    border-spacing: 0px;
+    display: none;
+}
+*/
+
+/*
+span.search-form {
+    display: none;
+}
+*/
 
 table.vbitext {
     border: none;

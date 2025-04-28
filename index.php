@@ -25,17 +25,42 @@ if (isset($_GET['logout'])){
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="index.css?v43" type="text/css">
+  <link rel="stylesheet" href="index.css?v54" type="text/css">
   <script type="text/javascript">
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
 	}
     function toggleElement(id) {
         var x = document.getElementById(id);
-        if (x.style.display === "none") {
-            x.style.display = "block";
-        } else {
+        if (x.style.display === "inline") {
             x.style.display = "none";
+        } else {
+            x.style.display = "inline";
+        }
+    }
+    function toggleElementClass(name) {
+        var x = document.getElementsByClassName(name);
+        for (var i = 0; i < x.length; i++){
+            const display = x[i].style.display;
+            if (display === "none") {
+                x[i].style.display = "inline";
+                localStorage.setItem(name, 'class-inline');
+            } else {                
+                x[i].style.display = "none";
+                localStorage.setItem(name, 'class-none');
+            }
+        }
+    }
+    function toggleClassVisibility(name) {
+        var x = document.getElementsByClassName(name);
+        for (var i = 0; i < x.length; i++){
+            if (x[i].style.visibility === "collapse") {
+                x[i].style.visibility = "visible";
+                localStorage.setItem(name, 'class-visible');
+            } else {
+                x[i].style.visibility = "collapse";
+                localStorage.setItem(name, 'class-collapse');
+            }
         }
     }
     function toggleVisibility(id) {
@@ -46,12 +71,50 @@ if (isset($_GET['logout'])){
         } else {
             x.style.visibility = "collapse";
             localStorage.setItem(id, 'collapse');
+        }        
+    }
+
+    function hideSearchForm(){
+        localStorage.setItem('showSearch', 0);
+        var x = document.getElementsByClassName('search-form');
+        for (var i = 0; i < x.length; i++){
+            x[i].style.display = "none";
         }
     }
+    function showSearchForm(){
+        localStorage.setItem('showSearch', 1);
+        var x = document.getElementsByClassName('search-form');
+        for (var i = 0; i < x.length; i++){
+            x[i].style.display = "inline";
+        }
+    }
+
+    function toggleSearchForm(){
+        const show = localStorage.getItem('showSearchForm');
+        const x = document.getElementsByClassName('search-form');
+        if (show){
+            localStorage.setItem('showSearchForm',0);
+            displaySearchForm(0);
+        } else {
+            localStorage.setItem('showSearchForm',1);
+            displaySearchForm(1);
+        }                                 
+    }
+
+    function displaySearchForm(show){
+        const x = document.getElementsByClassName('search-form');
+        const style = show ? 'inline' : 'none';
+        for (var i = 0; i < x.length; i++){
+            x[i].style.display = style;
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function(event) {
         var scrollpos = localStorage.getItem('scrollpos');
         if (scrollpos) window.scrollTo(0, scrollpos);
         localStorage.setItem('scrollpos', 0);
+        // localStorage.clear();
+        // displaySearchForm(localStorage.getItem('showSearchForm'));
         for (var i = 0; i < localStorage.length; i++){
             var key = localStorage.key(i);
             if (localStorage.getItem(key) === "hidden"){
@@ -62,6 +125,44 @@ if (isset($_GET['logout'])){
                 var x = document.getElementById(key);
                 x.style.visibility = "collapse";
             }
+            else if (localStorage.getItem(key) === "visible"){
+                var x = document.getElementById(key);
+                x.style.visibility = "visible";
+            }
+            /*
+            else if (localStorage.getItem(key) === "inline"){
+                var x = document.getElementById(key);
+                x.style.display = "visible";
+            }
+            else if (localStorage.getItem(key) === "none"){
+                var x = document.getElementById(key);
+                x.style.display = "none";
+            }
+            else if (localStorage.getItem(key) === "class-none"){
+                var x = document.getElementsByClassName(key);
+                for (var i = 0; i < x.length; i++){
+                    x[i].style.display = "none";
+                }
+            }
+            else if (localStorage.getItem(key) === "class-inline"){
+                var x = document.getElementsByClassName(key);
+                for (var i = 0; i < x.length; i++){
+                    x[i].style.display = "inline";                    
+                }                
+            }
+            else if (localStorage.getItem(key) === "class-visible"){
+                var x = document.getElementsByClassName(key);
+                for (var i = 0; i < x.length; i++){
+                    x[i].style.visibility = "visible";
+                }
+            }
+            else if (localStorage.getItem(key) === "class-hidden"){
+                var x = document.getElementsByClassName(key);
+                for (var i = 0; i < x.length; i++){
+                    x[i].style.visibility = "hidden";
+                }
+            }
+            */
         }
     });
     window.onbeforeunload = function(e) {
@@ -111,6 +212,7 @@ $alignType = get_param('aligntype');
 $showEmpty = get_param('showEmpty',1);
 if ($alignType == '0-1' || $alignType == '1-0') $showEmpty=1;
 
+$showSearch = get_param('showSearch',0);
 $showScores = get_param('showScores',1);
 $showLengthRatio = get_param('showLengthRatio',1);
 $showRatings = get_param('showRatings',1);
@@ -191,11 +293,19 @@ elseif ($srclang && $trglang){
     if ($corpus && $version){
         if ($fromDoc && $toDoc) print_bitext($bitext, $alignType, $offset);
         else{
+            echo('<div class="rightalign">');
+            bitext_search_options();
+            // echo(' / <a class="clickable" onclick="toggleElementClass(\'search-form\');">search</a>');
+            echo('</div>');
             echo('</br><hr>');
             print_document_list($bitext, $offset, $fromDocQuery, $toDocQuery);
         }
     }
     else{
+        echo('<div class="rightalign">');
+        bitext_search_options();
+        // echo(' / <a class="clickable" onclick="toggleElementClass(\'search-form\');">search</a>');
+        echo('</div>');
         echo('</br><hr>');
         print_corpus_list($bitext);
     }
