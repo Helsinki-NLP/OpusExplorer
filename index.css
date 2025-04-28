@@ -84,9 +84,16 @@ a.clickable:hover {
     background-color: #eeeeee;
 }
 
-#bitext-options {
-    visibility: collapse;
+#aligntype-options {
+/*    visibility: collapse;  */
+    display: none;
 }
+
+#edit-options {
+/*    visibility: collapse;  */
+    display: none;
+}
+
 
 th.bitext   {
     border: none;
@@ -161,11 +168,10 @@ table.search-form {
 }
 */
 
-/*
 span.search-form {
     display: none;
 }
-*/
+
 
 table.vbitext {
     border: none;

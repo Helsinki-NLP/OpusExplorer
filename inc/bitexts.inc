@@ -501,6 +501,11 @@ class alignmentSearchResult extends alignments {
 function bitext_edit_links($bitext){
     global $tableStyle, $showModified, $allowEdit;
 
+    if ($allowEdit){
+        echo(' / <a class="clickable" onclick="toggleElement(\'edit-options\');">edit</a>');
+        echo('<span id="edit-options">');
+    }
+    
     if ($tableStyle == 'edit' && $allowEdit){
         $query = make_query(['style' => 'horizontal', 'showModified' => 1]);
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">stop editing</a>');
@@ -520,7 +525,9 @@ function bitext_edit_links($bitext){
             $query = make_query(['style' => 'edit']);
             echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit mode</a>');
         }
-
+    }
+    if ($allowEdit){
+        echo('</span>');
     }
 }
 
@@ -530,6 +537,7 @@ function bitext_aligntype_links($bitext, $selectedAlignType=''){
 
     if ($tableStyle == 'edit') return;
 
+    echo(' / <a class="clickable" onclick="toggleElement(\'aligntype-options\');">align&nbsp;types</a>');
     echo('<span id="aligntype-options">');
     if (! $selectedAlignType){
         echo(' / standard');
@@ -561,7 +569,7 @@ function bitext_aligntype_links($bitext, $selectedAlignType=''){
         $query = make_query(['showEmpty' => 1]);
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">show empty</a>');
     }
-    echo(' / </span>');
+    echo('</span>');
 }
 
 
@@ -642,7 +650,8 @@ function bitext_display_options(){
 
 function bitext_search_options(){
     global $showSearch;
-    // echo(' / <a class="clickable" onclick="toggleSearchForm();">search</a>');
+    echo(' / <a class="clickable" id="search-form" onclick="toggleSearchForm();">search</a>');
+    /*
     if ($showSearch){
         $query = make_query(['showSearch' => 0]);
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">search</a>');
@@ -651,39 +660,53 @@ function bitext_search_options(){
         $query = make_query(['showSearch' => 1]);
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>search</strike></a>');
     }
-
+    */
 }
 
-function bitext_score_options(){
+function bitext_score_options($tableStyle = 'horizontal'){
     global $showScores, $showLengthRatio;
 
     // change visibility of entire columns in a table does not work on Safari nor on iOS
     //
     // echo(' / <span id="hide-score-columns" onclick="toggleVisibility(\'bitext-score-column\')">scores</span>');
     // echo(' / <span id="hide-score-columns" onclick="toggleVisibility(\'bitext-ratio-column\')">scores</span>');
-    
-    if ($showScores){
-        $query = make_query(['showScores' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">scores</a>');
+
+
+    if ($tableStyle == 'vertical'){
+        if ($showScores || $showLengthRatio){
+            $query = make_query(['showScores' => 0, 'showLengthRatio' => 0]);
+            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">scores</a>');
+        }
+        else{
+            $query = make_query(['showScores' => 1, 'showLengthRatio' => 1]);
+            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>scores</strike></a>');
+        }
     }
-    else{
-        $query = make_query(['showScores' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>scores</strike></a>');
-    }
-    if ($showLengthRatio){
-        $query = make_query(['showLengthRatio' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">length ratio</a>');
-    }
-    else{
-        $query = make_query(['showLengthRatio' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>length ratio</strike></a>');
+    else{    
+        if ($showScores){
+            $query = make_query(['showScores' => 0]);
+            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">scores</a>');
+        }
+        else{
+            $query = make_query(['showScores' => 1]);
+            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>scores</strike></a>');
+        }
+        if ($showLengthRatio){
+            $query = make_query(['showLengthRatio' => 0]);
+            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">length ratio</a>');
+        }
+        else{
+            $query = make_query(['showLengthRatio' => 1]);
+            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>length ratio</strike></a>');
+        }
     }
 }
 
 function bitext_aligntype_menu(){
     global $showAlignTypes;
 
-    echo(' <span id="aligntype-menu" onclick="toggleVisibility(\'aligntype-options\');">.&nbsp;.&nbsp;.</span>');
+    // echo(' <span id="aligntype-menu" onclick="toggleVisibility(\'aligntype-options\');">.&nbsp;.&nbsp;.</span> ');
+    echo(' <span id="aligntype-menu" onclick="toggleElement(\'aligntype-options\');">.&nbsp;.&nbsp;.</span> ');
 
     /*
     if ($showAlignTypes){
@@ -772,21 +795,15 @@ function print_bitext_table($bitext, $alignments, $offset=0){
         $showStart = $searchquery ? true : false;
         bitext_navigation($offset, $showMaxAlignments, $showStart);
         echo('<div class="rightalign">');
+        bitext_edit_links($bitext, $alignType);
         bitext_search_options();
         bitext_display_options();
         echo('</div></br><hr>');
         // echo('<div class="rightalign">');
+        // bitext_score_options($tableStyle);
         bitext_score_options();
         bitext_rating_options();
-        if (! $searchquery){
-            // echo(' / <a class="clickable" onclick="toggleElement(\'bitext-options\');">.&nbsp;.&nbsp;.</a>');
-            // echo(' / <a class="clickable" onclick="toggleClassVisibility(\'search-form\');">search</a>');
-            echo(' / <a class="clickable" onclick="toggleVisibility(\'bitext-options\');">.&nbsp;.&nbsp;.</a>');
-            echo('<span id="bitext-options">');
-            bitext_edit_links($bitext, $alignType);
-            if ($tableStyle != 'edit') bitext_aligntype_links($bitext, $alignType);
-            echo('</span>');
-        }
+        if (!$searchquery && ($tableStyle != 'edit')) bitext_aligntype_links($bitext, $alignType);
         // echo('</div><br/>');
         echo('<br/>');
 
@@ -1075,53 +1092,18 @@ function print_vertical_bitext_table($alignments,
         echo '<input type="hidden" id="linkID" name="linkID" value="0">';
         echo '</form></p>';
     }
-
-    /*
-    echo('<p><table class="search-form">');
-    if ($fromDoc){
-        echo("<tr><th class='vbitext-search'>$fromDoc</th><th class='vbitext-search'>");
-        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
-        echo("</th></tr>");
-    }
-    if ($toDoc){
-        echo("<tr><th class='vbitext-search'>$toDoc</th><th class='vbitext-search'>");
-        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
-        echo("</th></tr>");
-    }
-    echo("</table>");
-    */
     
     echo('<p><table class="vbitext">');
     
-    // echo("<tr><th class='vbitext-docname'>source<br/>target</th>");
     echo("<tr><th class='vbitext'>IDs</th><th class='vbitext'>");
     if ($fromDoc && $toDoc){
         echo($fromDoc.'&nbsp;// '.$toDoc.'&nbsp;&nbsp;');
         print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 1);
     }
     echo("</th>");
-    
-    /*
-    echo("<th><div class='leftalign'>&nbsp;&nbsp;");
-    echo("$fromDoc&nbsp;&nbsp;");
-    if ($fromDoc) print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
-    // echo("<br/>$toDoc&nbsp;");
-    echo("</div> <div class='rightalign'>$toDoc&nbsp;&nbsp;");
-    if ($toDoc) print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
-    echo("&nbsp;&nbsp;</div></th>");
-    */
-
-    /*
-    if ($showScores){
-        if ($showLengthRatio) echo('<th class="vbitext">score<br/>ratio</th>');
-        else echo('<th class="vbitext">score<br/>&nbsp;</th>');
-    }
-    elseif ($showLengthRatio) echo('<th class="vbitext">&nbsp;<br/>ratio</th>');
-    */
-
-    // echo("<th class='vbitext'></th>");
-    if ($showLengthRatio || $showScores)
-        echo('<th class="vbitext">scores</th>');
+        
+    // if ($showLengthRatio || $showScores)
+    //     echo('<th class="vbitext">scores</th>');
     echo("</tr>");
     
 

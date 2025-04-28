@@ -25,42 +25,28 @@ if (isset($_GET['logout'])){
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="index.css?v54" type="text/css">
+  <link rel="stylesheet" href="index.css?v56" type="text/css">
   <script type="text/javascript">
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
 	}
+
+    function displayElement(id,style){
+        /* console.log('style:' + id + ' = ' + style); */
+        const x = document.getElementById(id);
+        if (x){
+            if (! style ) style = 'none';
+            console.log('style:' + id + ' = ' + style);
+            x.style.display = style;
+        }
+    }
     function toggleElement(id) {
-        var x = document.getElementById(id);
-        if (x.style.display === "inline") {
-            x.style.display = "none";
-        } else {
-            x.style.display = "inline";
-        }
-    }
-    function toggleElementClass(name) {
-        var x = document.getElementsByClassName(name);
-        for (var i = 0; i < x.length; i++){
-            const display = x[i].style.display;
-            if (display === "none") {
-                x[i].style.display = "inline";
-                localStorage.setItem(name, 'class-inline');
-            } else {                
-                x[i].style.display = "none";
-                localStorage.setItem(name, 'class-none');
-            }
-        }
-    }
-    function toggleClassVisibility(name) {
-        var x = document.getElementsByClassName(name);
-        for (var i = 0; i < x.length; i++){
-            if (x[i].style.visibility === "collapse") {
-                x[i].style.visibility = "visible";
-                localStorage.setItem(name, 'class-visible');
-            } else {
-                x[i].style.visibility = "collapse";
-                localStorage.setItem(name, 'class-collapse');
-            }
+        const style = localStorage.getItem(id);
+        var newstyle = style === 'none' ? 'inline' : 'none';
+        localStorage.setItem(id,newstyle);
+        displayElement(id,newstyle);
+        for(var i in localStorage) {
+            console.log(i + ' = ' + localStorage[i]);
         }
     }
     function toggleVisibility(id) {
@@ -73,48 +59,35 @@ if (isset($_GET['logout'])){
             localStorage.setItem(id, 'collapse');
         }        
     }
-
-    function hideSearchForm(){
-        localStorage.setItem('showSearch', 0);
-        var x = document.getElementsByClassName('search-form');
-        for (var i = 0; i < x.length; i++){
-            x[i].style.display = "none";
-        }
-    }
-    function showSearchForm(){
-        localStorage.setItem('showSearch', 1);
-        var x = document.getElementsByClassName('search-form');
-        for (var i = 0; i < x.length; i++){
-            x[i].style.display = "inline";
-        }
-    }
-
-    function toggleSearchForm(){
-        const show = localStorage.getItem('showSearchForm');
+    function displaySearchForm(style){
         const x = document.getElementsByClassName('search-form');
-        if (show){
-            localStorage.setItem('showSearchForm',0);
-            displaySearchForm(0);
-        } else {
-            localStorage.setItem('showSearchForm',1);
-            displaySearchForm(1);
-        }                                 
-    }
-
-    function displaySearchForm(show){
-        const x = document.getElementsByClassName('search-form');
-        const style = show ? 'inline' : 'none';
         for (var i = 0; i < x.length; i++){
             x[i].style.display = style;
         }
+    }
+    function toggleSearchForm(){
+        const style = localStorage.getItem('displaySearchForm');
+        var newstyle = style === 'none' ? 'inline' : 'none';
+        localStorage.setItem('displaySearchForm',newstyle);
+        displaySearchForm(newstyle);
     }
 
     document.addEventListener("DOMContentLoaded", function(event) {
         var scrollpos = localStorage.getItem('scrollpos');
         if (scrollpos) window.scrollTo(0, scrollpos);
         localStorage.setItem('scrollpos', 0);
-        // localStorage.clear();
-        // displaySearchForm(localStorage.getItem('showSearchForm'));
+        displaySearchForm(localStorage.getItem('displaySearchForm'));
+        displayElement('edit-options', localStorage.getItem('edit-options'));
+        displayElement('aligntype-options', localStorage.getItem('aligntype-options'));
+
+        /*
+        for(var i in localStorage) {
+            console.log(i + ' = ' + localStorage[i]);
+        }
+        */
+
+        
+        /*
         for (var i = 0; i < localStorage.length; i++){
             var key = localStorage.key(i);
             if (localStorage.getItem(key) === "hidden"){
@@ -129,7 +102,6 @@ if (isset($_GET['logout'])){
                 var x = document.getElementById(key);
                 x.style.visibility = "visible";
             }
-            /*
             else if (localStorage.getItem(key) === "inline"){
                 var x = document.getElementById(key);
                 x.style.display = "visible";
@@ -138,32 +110,8 @@ if (isset($_GET['logout'])){
                 var x = document.getElementById(key);
                 x.style.display = "none";
             }
-            else if (localStorage.getItem(key) === "class-none"){
-                var x = document.getElementsByClassName(key);
-                for (var i = 0; i < x.length; i++){
-                    x[i].style.display = "none";
-                }
-            }
-            else if (localStorage.getItem(key) === "class-inline"){
-                var x = document.getElementsByClassName(key);
-                for (var i = 0; i < x.length; i++){
-                    x[i].style.display = "inline";                    
-                }                
-            }
-            else if (localStorage.getItem(key) === "class-visible"){
-                var x = document.getElementsByClassName(key);
-                for (var i = 0; i < x.length; i++){
-                    x[i].style.visibility = "visible";
-                }
-            }
-            else if (localStorage.getItem(key) === "class-hidden"){
-                var x = document.getElementsByClassName(key);
-                for (var i = 0; i < x.length; i++){
-                    x[i].style.visibility = "hidden";
-                }
-            }
-            */
         }
+        */
     });
     window.onbeforeunload = function(e) {
         localStorage.setItem('scrollpos', window.scrollY);
@@ -212,7 +160,7 @@ $alignType = get_param('aligntype');
 $showEmpty = get_param('showEmpty',1);
 if ($alignType == '0-1' || $alignType == '1-0') $showEmpty=1;
 
-$showSearch = get_param('showSearch',0);
+$showSearch = get_param('showSearch',1);
 $showScores = get_param('showScores',1);
 $showLengthRatio = get_param('showLengthRatio',1);
 $showRatings = get_param('showRatings',1);
