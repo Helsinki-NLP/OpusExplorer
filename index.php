@@ -25,11 +25,28 @@ if (isset($_GET['logout'])){
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="index.css?v56" type="text/css">
+  <link rel="stylesheet" href="index.css?v57" type="text/css">
   <script type="text/javascript">
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
 	}
+
+    function toggleOptions(id) {
+        const selected = localStorage.getItem('option-menu');
+        if (selected){
+            const x = document.getElementById(selected);
+            if (x) x.style.display = 'none';
+        }
+        if (selected == id){
+            localStorage.removeItem('option-menu');
+        } else {
+            const x = document.getElementById(id);
+            if (x){
+                x.style.display = 'inline';
+                localStorage.setItem('option-menu',id);
+            }
+        }
+    }
 
     function displayElement(id,style){
         /* console.log('style:' + id + ' = ' + style); */
@@ -79,6 +96,12 @@ if (isset($_GET['logout'])){
         displaySearchForm(localStorage.getItem('displaySearchForm'));
         displayElement('edit-options', localStorage.getItem('edit-options'));
         displayElement('aligntype-options', localStorage.getItem('aligntype-options'));
+        const selected = localStorage.getItem('option-menu');
+        if (selected){
+            const x = document.getElementById(selected);
+            if (x) x.style.display = 'inline';
+        }
+
 
         /*
         for(var i in localStorage) {
@@ -132,6 +155,7 @@ include('inc/opusindex.inc');
 include('inc/bitexts.inc');
 include('inc/ratings.inc');
 include('inc/search.inc');
+include('inc/options.inc');
 
 
 

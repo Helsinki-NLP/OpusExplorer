@@ -799,13 +799,18 @@ function print_bitext_table($bitext, $alignments, $offset=0){
         bitext_search_options();
         bitext_display_options();
         echo('</div></br><hr>');
-        // echo('<div class="rightalign">');
-        // bitext_score_options($tableStyle);
-        bitext_score_options();
-        bitext_rating_options();
-        if (!$searchquery && ($tableStyle != 'edit')) bitext_aligntype_links($bitext, $alignType);
-        // echo('</div><br/>');
-        echo('<br/>');
+        bitext_options();
+        echo('<div class="rightalign">');
+        score_options_menu();
+        rating_options_menu();
+        aligntype_options_menu();
+        other_options_menu();
+        echo('</div><br/>');
+        
+        // bitext_score_options();
+        // bitext_rating_options();
+        // if (!$searchquery && ($tableStyle != 'edit')) bitext_aligntype_links($bitext, $alignType);
+        // echo('<br/>');
 
         if ($tableStyle == 'edit' && $allowEdit){
             $shown = print_editable_bitext_table($alignments,
@@ -1097,8 +1102,15 @@ function print_vertical_bitext_table($alignments,
     
     echo("<tr><th class='vbitext'>IDs</th><th class='vbitext'>");
     if ($fromDoc && $toDoc){
-        echo($fromDoc.'&nbsp;// '.$toDoc.'&nbsp;&nbsp;');
-        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 1);
+        echo('<table class="vbitext-docnames"><tr><th class="vbitext-docnames">');
+        echo($fromDoc);
+        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
+        echo('</th><th class="vbitext-docnames">');
+        echo($toDoc);
+        print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
+        echo('</th></tr></table>');
+        //echo($fromDoc.'&nbsp;// '.$toDoc.'&nbsp;&nbsp;');
+        //print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 1);
     }
     echo("</th>");
         

@@ -13,7 +13,7 @@ $ALLOW_GUEST_USERS = 1;
 $DOCUMENT_LIST_LIMIT = 20;
 $SHOW_ALIGNMENTS_LIMIT = 10;
 
-$ALIGN_TYPES = array('random','rated','1-1','1-2','2-1','1-0','0-1');
+$ALIGN_TYPES = array('1-1','1-2','2-1','1-0','0-1');
 // $SHOW_ALIGN_TYPES = 1;
 $SHOW_ALIGN_TYPES = 0;
 

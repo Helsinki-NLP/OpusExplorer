@@ -94,6 +94,10 @@ a.clickable:hover {
     display: none;
 }
 
+span.option-menu {
+    display: none;
+}
+
 
 th.bitext   {
     border: none;
@@ -170,6 +174,19 @@ table.search-form {
 
 span.search-form {
     display: none;
+}
+
+
+table.vbitext-docnames {
+    border: none;
+    border-collapse: separate;
+    border-spacing: 0px;
+    width: 100%;
+}
+th.vbitext-docnames   {
+    border: none;
+    padding: 0px;
+    text-align: center;
 }
 
 
