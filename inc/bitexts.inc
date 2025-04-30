@@ -782,7 +782,7 @@ function print_horizontal_bitext_table($alignments,$showMyRatings=0, $showRating
         // scores (alignment score, length ratio)
                 
         $score = $row['alignerScore'];
-        $scloreColor = score_color($score);
+        $scoreColor = score_color($score);
         
         $srcLen = mb_strlen($srcText);
         $trgLen = mb_strlen($trgText);
@@ -792,17 +792,19 @@ function print_horizontal_bitext_table($alignments,$showMyRatings=0, $showRating
         }
         $ratioColor = score_color($ratio);
         $pretty_ratio = sprintf('%5.3f',$ratio);
+        $ratioColor = score_color($ratio);
         
-        echo("<td class='hbitext-score' bgcolor='$ratioColor'><table class='bitext-scores'>");
+        // $cellColor = $score ? score_color(($ratio+$score)/2) : $ratioColor;
+        $cellColor = $score ? $scoreColor : $ratioColor;
+        
+        echo("<td class='hbitext-score' bgcolor='$cellColor'>");
         if ($score){
-            echo("<tr><td bgcolor='$scoreColor' class='bitext-scores'>");
-            echo("<span class='bitext-alignscore'>$score</span></td></tr>");
+            echo("<span class='bitext-alignscore' style='background-color: $scoreColor;'>&nbsp;$score&nbsp;<br/></span>");
         }
         if ($ratio){
-            echo("<tr><td bgcolor='$ratioColor' class='bitext-scores'>");
-            echo("<span class='bitext-lengthratio'>$pretty_ratio</span></td></tr>");
+            echo("<span class='bitext-lengthratio' style='background-color: $ratioColor;'>&nbsp;$pretty_ratio&nbsp;<br/></span>");
         }
-        echo('</table></td>');
+        echo('</td>');
 
 
         // target language text
