@@ -33,16 +33,6 @@ function print_search_form($langpair, $corpus='', $version='', $fromDoc='', $toD
 
 
 function search($searchquery, $searchside, $bitext, $limit=10, $offset=0, $orderByLinkID=0){
-    global $showScores, $showLengthRatio, $showRatings, $showMyRatings;
-    global $allowSortLinks;    
-
-    $langpair = $bitext->langpair;
-    $corpus = $bitext->corpus;
-    $version = $bitext->version;
-    $fromDoc = $bitext->fromDoc;
-    $toDoc = $bitext->toDoc;
-    $bitextID = $bitext->id();
-    
     $alignments = $bitext->search($searchquery, $searchside, $limit, $offset, $orderByLinkID);
     print_bitext_table($bitext, $alignments, $offset);
     return;

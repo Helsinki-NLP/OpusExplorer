@@ -20,13 +20,12 @@ function bitext_options(){
     echo('</span> ');
 
     echo('/ <span class="option-selector">');
-    echo('<a class="clickable" id="other-option-selector" onclick="toggleOptions(\'other-option\');">other</a>');
+    echo('<a class="clickable" id="other-option-selector" onclick="toggleOptions(\'other-option\');">other&nbsp;options</a>');
     echo('</span> ');
 
 }
 
 function score_options_menu(){
-    global $showScores, $showLengthRatio;
 
     // change visibility of entire columns in a table does not work on Safari nor on iOS
     //
@@ -37,27 +36,6 @@ function score_options_menu(){
     echo(' / <a class="clickable" id="alignscore-selector" onclick="toggleScore(\'alignscore\')">align&nbsp;scores</a>');
     echo(' / <a class="clickable" id="lengthratio-selector" onclick="toggleScore(\'lengthratio\')">length&nbsp;ratio</a>');
     echo('</span>');
-
-    /*
-    echo('<span class="option-menu" id="score-option">');
-    if ($showScores){
-        $query = make_query(['showScores' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">align&nbsp;scores</a>');
-    }
-    else{
-        $query = make_query(['showScores' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>align&nbsp;scores</strike></a>');
-    }
-    if ($showLengthRatio){
-        $query = make_query(['showLengthRatio' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">length&nbsp;ratio</a>');
-    }
-    else{
-        $query = make_query(['showLengthRatio' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>length&nbsp;ratio</strike></a>');
-    }
-    echo('</span>');
-    */
 
 }
 
@@ -189,16 +167,6 @@ function bitext_display_options(){
 function bitext_search_options(){
     global $showSearch;
     echo(' / <a class="clickable" id="search-form" onclick="toggleSearchForm();">search</a>');
-    /*
-    if ($showSearch){
-        $query = make_query(['showSearch' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">search</a>');
-    }
-    else{
-        $query = make_query(['showSearch' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>search</strike></a>');
-    }
-    */
 }
 
 function bitext_edit_links($bitext){
