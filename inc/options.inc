@@ -4,23 +4,23 @@
 function bitext_options(){
     global $searchquery, $tableStyle;
 
-    echo('/ <span class="option-selector" id="score-option-selector">');
-    echo('<a class="clickable" onclick="toggleOptions(\'score-option-menu\');">scores</a>');
+    echo('/ <span class="option-selector">');
+    echo('<a class="clickable"  id="score-option-selector" onclick="toggleOptions(\'score-option\');">scores</a>');
     echo('</span> ');
     
-    echo('/ <span class="option-selector" id="rating-option-selector">');
-    echo('<a class="clickable" onclick="toggleOptions(\'rating-option-menu\');">ratings</a>');
+    echo('/ <span class="option-selector">');
+    echo('<a class="clickable" id="rating-option-selector" onclick="toggleOptions(\'rating-option\');">ratings</a>');
     echo('</span> ');
 
     if ($searchquery) return;
     if ($tableStyle == 'edit') return;
 
-    echo('/ <span class="option-selector" id="aligntype-option-selector">');
-    echo('<a class="clickable" onclick="toggleOptions(\'aligntype-option-menu\');">align&nbsp;types</a>');
+    echo('/ <span class="option-selector">');
+    echo('<a class="clickable" id="aligntype-option-selector" onclick="toggleOptions(\'aligntype-option\');">align&nbsp;types</a>');
     echo('</span> ');
 
-    echo('/ <span class="option-selector" id="other-option-selector">');
-    echo('<a class="clickable" onclick="toggleOptions(\'other-option-menu\');">other</a>');
+    echo('/ <span class="option-selector">');
+    echo('<a class="clickable" id="other-option-selector" onclick="toggleOptions(\'other-option\');">other</a>');
     echo('</span> ');
 
 }
@@ -28,7 +28,7 @@ function bitext_options(){
 function score_options_menu(){
     global $showScores, $showLengthRatio;
 
-    echo('<span class="option-menu" id="score-option-menu">');
+    echo('<span class="option-menu" id="score-option">');
     if ($showScores){
         $query = make_query(['showScores' => 0]);
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">align&nbsp;scores</a>');
@@ -52,7 +52,7 @@ function score_options_menu(){
 function rating_options_menu(){
     global $showRatings,$showMyRatings;
 
-    echo('<span class="option-menu" id="rating-option-menu">');
+    echo('<span class="option-menu" id="rating-option">');
     if ($showRatings){
         echo(' / average&nbsp;rating');
     }
@@ -87,7 +87,7 @@ function aligntype_options_menu(){
     if ($searchquery) return;
     if ($tableStyle == 'edit') return;
 
-    echo('<span class="option-menu" id="aligntype-option-menu">');
+    echo('<span class="option-menu" id="aligntype-option">');
     if (! $alignType){
         echo(' / all');
     }
@@ -132,7 +132,7 @@ function other_options_menu(){
 
     $EXTRA_TYPES = array('random','rated');
 
-    echo('<span class="option-menu" id="other-option-menu">');
+    echo('<span class="option-menu" id="other-option">');
     if (! $alignType){
         echo(' / sorted');
     }

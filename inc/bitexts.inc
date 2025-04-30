@@ -501,10 +501,12 @@ class alignmentSearchResult extends alignments {
 function bitext_edit_links($bitext){
     global $tableStyle, $showModified, $allowEdit;
 
+    /*
     if ($allowEdit){
         echo(' / <a class="clickable" onclick="toggleElement(\'edit-options\');">edit</a>');
         echo('<span id="edit-options">');
     }
+    */
     
     if ($tableStyle == 'edit' && $allowEdit){
         $query = make_query(['style' => 'horizontal', 'showModified' => 1]);
@@ -523,7 +525,7 @@ function bitext_edit_links($bitext){
         }
         if ($allowEdit){
             $query = make_query(['style' => 'edit']);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit mode</a>');
+            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit</a>');
         }
     }
     if ($allowEdit){
@@ -595,7 +597,7 @@ function bitext_browsing_links($bitext, $selectedAlignType=''){
         }
         if ($allowEdit){
             $query = make_query(['style' => 'edit']);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit mode</a>');
+            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit</a>');
         }
 
         if (! $SHOW_ALIGN_TYPES) return;

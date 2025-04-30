@@ -25,7 +25,7 @@ if (isset($_GET['logout'])){
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="index.css?v57" type="text/css">
+  <link rel="stylesheet" href="index.css?v59" type="text/css">
   <script type="text/javascript">
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
@@ -36,6 +36,8 @@ if (isset($_GET['logout'])){
         if (selected){
             const x = document.getElementById(selected);
             if (x) x.style.display = 'none';
+            const m = document.getElementById(selected + '-selector');
+            if (m) m.style.color = 'blue';
         }
         if (selected == id){
             localStorage.removeItem('option-menu');
@@ -44,6 +46,8 @@ if (isset($_GET['logout'])){
             if (x){
                 x.style.display = 'inline';
                 localStorage.setItem('option-menu',id);
+                const m = document.getElementById(id + '-selector');
+                if (m) m.style.color = 'black';
             }
         }
     }
@@ -99,7 +103,11 @@ if (isset($_GET['logout'])){
         const selected = localStorage.getItem('option-menu');
         if (selected){
             const x = document.getElementById(selected);
-            if (x) x.style.display = 'inline';
+            if (x){
+                x.style.display = 'inline';
+                const m = document.getElementById(selected + '-selector');
+                if (m) m.style.color = 'black';
+            }
         }
 
 
@@ -211,8 +219,8 @@ $resourceView = get_param('resourceView','langMatrix');
 ## - allow to search for other alignment types (expensive search for large doc's!)
 */
 
-// $allowEdit = 1;
 $allowEdit            = $user != 'guest' ? in_array($corpus, $ALLOW_EDIT) : 0;
+// $allowEdit = 1;
 $showAlignTypes       = get_param('showAlignTypes',$SHOW_ALIGN_TYPES);
 $allowOtherAlignTypes = in_array($corpus, $ALLOW_EDIT);
 $allowRandomLinks     = in_array($corpus, $ALLOW_EDIT);

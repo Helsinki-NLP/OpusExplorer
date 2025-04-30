@@ -1,12 +1,16 @@
 
 a:link {
-  text-decoration: none;
+    text-decoration: none;
+    color: blue;
 }
 
 a:hover {
     background-color: #eeeeee;
+    color: blue;
 }
 
+a:active{ color: blue }
+a:visited{ color: blue }
 
 span.right  {text-align: right;}
 span.left   {text-align: left;}
