@@ -5,9 +5,6 @@
 function print_search_form($langpair, $corpus='', $version='', $fromDoc='', $toDoc='', $bitextID=0,
                            $searchquery='', $allowSourceSearch=1, $allowTargetSearch=1){
     
-    global $showSearch;
-    if (! $showSearch) return;
-    
     echo(' <span class="search-form"><form action="'.$_SERVER['PHP_SELF'].'" method="get" style="display: inline;">');
     echo('<input type="hidden" id="langpair" name="langpair" value="'.$langpair.'">');
     echo('<input type="hidden" id="offset" name="offset" value="0">');

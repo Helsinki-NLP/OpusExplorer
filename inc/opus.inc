@@ -55,7 +55,6 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
                                          'showMaxAlignments' => $SHOW_ALIGNMENTS_LIMIT,
                                          'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
                     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$fromDoc.'</a> / ');
-                    // if (! $searchquery) bitext_browsing_links($bitext, $alignType);
                 }
             }
         }

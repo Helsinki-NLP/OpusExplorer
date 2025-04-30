@@ -17,7 +17,7 @@ span.left   {text-align: left;}
 span.center {text-align: center;}
 
 div.rightalign  {text-align: right; float: right; display: inline;}
-div.leftalign   {text-align: left; float: left; display: inline;}
+div.leftalign   {text-align: left;  float: left;  display: inline;}
 
 table.login     {border: none;}
 td.login        {border: none;}
@@ -36,7 +36,7 @@ td.segment-move {width: 10px; text-align: center; border: none; background-color
 td.segment-src {text-align: right; border: none;}
 td.segment-trg {text-align: left; border: none;}
 
-td.leftalign   {text-align: left;width: 40%;padding-left: 10px;}
+td.leftalign   {text-align: left; width: 40%;padding-left: 10px;}
 td.rightalign  {text-align: right;width: 40%;padding-right: 10px;}
 td.centeralign  {text-align: center;}
 table {
@@ -88,16 +88,6 @@ a.clickable:hover {
     background-color: #eeeeee;
 }
 
-#aligntype-options {
-/*    visibility: collapse;  */
-    display: none;
-}
-
-#edit-options {
-/*    visibility: collapse;  */
-    display: none;
-}
-
 span.option-menu {
     display: none;
 }
@@ -131,55 +121,9 @@ td.bitextspace   {
 
 
 
-/*
-tr.vbitext-src {
-    border-top: 20px solid;
-    border-color: white;
-}
-
-tr.vbitext-trg {
-    border-bottom: 20px solid;
-    border-color: white;
-}
-
-
-th.vbitext {
-    border: 2px solid;
-}
-*/
-
-    /*
-tr.vbitext-src   {
-
-    border-radius: 10px 0px 0px 0px;
-    border-top: 2px solid;
-    border-bottom: 1px dotted;
-    border-left: 2px solid;
-    border-right: 2px solid;
-    background-color: #eeeeee;
-}
-tr.vbitext-trg   {
-    border-top: 1px dotted;
-    border-bottom: 2px solid;
-    border-left: 2px solid;
-    border-right: 2px solid;
-
-}
-*/
-
-/*
-table.search-form {
-    border: none;
-    border-collapse: separate;
-    border-spacing: 0px;
-    display: none;
-}
-*/
-
 span.search-form {
     display: none;
 }
-
 
 table.vbitext-docnames {
     border: none;
@@ -362,25 +306,11 @@ td.hbitext-edit-trg {
 }
 
 td.hbitext-score {
-    /*
-    border-top: none;
-    border-bottom: none;
-    border-left: none;
-    border-right: none;
-    border-spacing: 0px;
-   */
     border: none;
     text-align: center;
 }
 
 td.hbitext-ratio {
-    /*
-    border-top: none;
-    border-bottom: none;
-    border-left: none;
-    border-right: none;
-    border-spacing: 0px;
-   */
     border: none;
     text-align: center;
 }

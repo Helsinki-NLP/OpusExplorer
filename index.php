@@ -30,7 +30,6 @@ if (isset($_GET['logout'])){
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
 	}
-
     function toggleOptions(id) {
         const selected = localStorage.getItem('option-menu');
         if (selected){
@@ -51,35 +50,6 @@ if (isset($_GET['logout'])){
             }
         }
     }
-
-    function displayElement(id,style){
-        /* console.log('style:' + id + ' = ' + style); */
-        const x = document.getElementById(id);
-        if (x){
-            if (! style ) style = 'none';
-            console.log('style:' + id + ' = ' + style);
-            x.style.display = style;
-        }
-    }
-    function toggleElement(id) {
-        const style = localStorage.getItem(id);
-        var newstyle = style === 'none' ? 'inline' : 'none';
-        localStorage.setItem(id,newstyle);
-        displayElement(id,newstyle);
-        for(var i in localStorage) {
-            console.log(i + ' = ' + localStorage[i]);
-        }
-    }
-    function toggleVisibility(id) {
-        var x = document.getElementById(id);
-        if (x.style.visibility === "collapse") {
-            x.style.visibility = "visible";
-            localStorage.setItem(id, 'visible');
-        } else {
-            x.style.visibility = "collapse";
-            localStorage.setItem(id, 'collapse');
-        }        
-    }
     function displaySearchForm(style){
         const x = document.getElementsByClassName('search-form');
         for (var i = 0; i < x.length; i++){
@@ -92,14 +62,15 @@ if (isset($_GET['logout'])){
         localStorage.setItem('displaySearchForm',newstyle);
         displaySearchForm(newstyle);
     }
-
+    function saveScrollPosition() {
+      localStorage.setItem('scrollpos', window.scrollY);
+      location.reload(); 
+    }
     document.addEventListener("DOMContentLoaded", function(event) {
         var scrollpos = localStorage.getItem('scrollpos');
         if (scrollpos) window.scrollTo(0, scrollpos);
         localStorage.setItem('scrollpos', 0);
         displaySearchForm(localStorage.getItem('displaySearchForm'));
-        displayElement('edit-options', localStorage.getItem('edit-options'));
-        displayElement('aligntype-options', localStorage.getItem('aligntype-options'));
         const selected = localStorage.getItem('option-menu');
         if (selected){
             const x = document.getElementById(selected);
@@ -109,48 +80,10 @@ if (isset($_GET['logout'])){
                 if (m) m.style.color = 'black';
             }
         }
-
-
-        /*
-        for(var i in localStorage) {
-            console.log(i + ' = ' + localStorage[i]);
-        }
-        */
-
-        
-        /*
-        for (var i = 0; i < localStorage.length; i++){
-            var key = localStorage.key(i);
-            if (localStorage.getItem(key) === "hidden"){
-                var x = document.getElementById(key);
-                x.style.visibility = "hidden";
-            }
-            else if (localStorage.getItem(key) === "collapse"){
-                var x = document.getElementById(key);
-                x.style.visibility = "collapse";
-            }
-            else if (localStorage.getItem(key) === "visible"){
-                var x = document.getElementById(key);
-                x.style.visibility = "visible";
-            }
-            else if (localStorage.getItem(key) === "inline"){
-                var x = document.getElementById(key);
-                x.style.display = "visible";
-            }
-            else if (localStorage.getItem(key) === "none"){
-                var x = document.getElementById(key);
-                x.style.display = "none";
-            }
-        }
-        */
     });
     window.onbeforeunload = function(e) {
         localStorage.setItem('scrollpos', window.scrollY);
     };
-    function saveScrollPosition() {
-      localStorage.setItem('scrollpos', window.scrollY);
-      location.reload(); 
-    }
   </script>
 </head>
 <body>
@@ -192,7 +125,6 @@ $alignType = get_param('aligntype');
 $showEmpty = get_param('showEmpty',1);
 if ($alignType == '0-1' || $alignType == '1-0') $showEmpty=1;
 
-$showSearch = get_param('showSearch',1);
 $showScores = get_param('showScores',1);
 $showLengthRatio = get_param('showLengthRatio',1);
 $showRatings = get_param('showRatings',1);

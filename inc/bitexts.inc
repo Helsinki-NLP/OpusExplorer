@@ -498,229 +498,6 @@ class alignmentSearchResult extends alignments {
 }
 
 
-function bitext_edit_links($bitext){
-    global $tableStyle, $showModified, $allowEdit;
-
-    /*
-    if ($allowEdit){
-        echo(' / <a class="clickable" onclick="toggleElement(\'edit-options\');">edit</a>');
-        echo('<span id="edit-options">');
-    }
-    */
-    
-    if ($tableStyle == 'edit' && $allowEdit){
-        $query = make_query(['style' => 'horizontal', 'showModified' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">stop editing</a>');
-    }
-    else{
-        if ($bitext->userDataExists()){
-            if ($showModified){
-                $query = make_query(['showModified' => 0]);
-                echo(' / modified / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">original</a>');
-            }
-            else{
-                $query = make_query(['showModified' => 1]);
-                echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">modified</a> / original');
-            }
-        }
-        if ($allowEdit){
-            $query = make_query(['style' => 'edit']);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit</a>');
-        }
-    }
-    if ($allowEdit){
-        echo('</span>');
-    }
-}
-
-function bitext_aligntype_links($bitext, $selectedAlignType=''){
-    global $tableStyle, $showModified, $allowEdit, $showEmpty;
-    global $ALIGN_TYPES, $allowOtherAlignTypes, $allowRandomLinks;
-
-    if ($tableStyle == 'edit') return;
-
-    echo(' / <a class="clickable" onclick="toggleElement(\'aligntype-options\');">align&nbsp;types</a>');
-    echo('<span id="aligntype-options">');
-    if (! $selectedAlignType){
-        echo(' / standard');
-    }
-    else{
-        $query = make_query(['aligntype' => '', 'offset' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">standard</a>');
-    }
-    foreach ($ALIGN_TYPES as $type){
-        if ($type == 'random' && ! $allowRandomLinks) continue;
-        if ($selectedAlignType != $type){
-            $query = make_query(['aligntype' => $type, 'offset' => 0]);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$type.'</a>');
-        }
-        else echo(' / '.$type);
-    }
-    if ($allowOtherAlignTypes){
-        if ($selectedAlignType != 'other'){
-            $query = make_query(['aligntype' => 'other', 'offset' => 0]);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">other</a>');
-        }
-        else echo(' / other');
-    }
-    if ($showEmpty){
-        $query = make_query(['showEmpty' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">hide empty</a>');
-    }
-    else{
-        $query = make_query(['showEmpty' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">show empty</a>');
-    }
-    echo('</span>');
-}
-
-
-
-function bitext_browsing_links($bitext, $selectedAlignType=''){
-    global $tableStyle, $showModified, $allowEdit, $showEmpty;
-    global $SHOW_ALIGN_TYPES, $ALIGN_TYPES, $allowOtherAlignTypes;
-
-    if ($tableStyle == 'edit' && $allowEdit){
-        $query = make_query(['style' => 'horizontal', 'showModified' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">stop editing</a>');
-    }
-    else{
-        if ($bitext->userDataExists()){
-            if ($showModified){
-                $query = make_query(['showModified' => 0]);
-                echo(' / modified / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">original</a>');
-            }
-            else{
-                $query = make_query(['showModified' => 1]);
-                echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">modified</a> / original');
-            }
-        }
-        if ($allowEdit){
-            $query = make_query(['style' => 'edit']);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit</a>');
-        }
-
-        if (! $SHOW_ALIGN_TYPES) return;
-        
-        foreach ($ALIGN_TYPES as $type){
-            if ($selectedAlignType != $type){
-                $query = make_query(['aligntype' => $type, 'offset' => 0]);
-                echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$type.'</a>');
-            }
-            else echo(' / '.$type);
-        }
-        if ($allowOtherAlignTypes){
-            if ($selectedAlignType != 'other'){
-                $query = make_query(['aligntype' => 'other', 'offset' => 0]);
-                echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">other</a>');
-            }
-            else echo(' / other');
-        }
-        if ($showEmpty){
-            $query = make_query(['showEmpty' => 0]);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">hide empty</a>');
-        }
-        else{
-            $query = make_query(['showEmpty' => 1]);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">show empty</a>');
-        }
-    }
-}
-
-
-
-////////////////////
-// print bitext display options
-///////////////////
-
-function bitext_display_options(){
-    global $tableStyle;
-
-    if ($tableStyle == 'vertical'){
-        $query = make_query(['style' => 'horizontal']);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">horizontal</a>');
-    }
-    else{
-        $query = make_query(['style' => 'vertical']);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">vertical</a>');
-    }
-
-    // bitext_score_options();
-    // bitext_rating_options();
-}
-
-
-function bitext_search_options(){
-    global $showSearch;
-    echo(' / <a class="clickable" id="search-form" onclick="toggleSearchForm();">search</a>');
-    /*
-    if ($showSearch){
-        $query = make_query(['showSearch' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">search</a>');
-    }
-    else{
-        $query = make_query(['showSearch' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>search</strike></a>');
-    }
-    */
-}
-
-function bitext_score_options($tableStyle = 'horizontal'){
-    global $showScores, $showLengthRatio;
-
-    // change visibility of entire columns in a table does not work on Safari nor on iOS
-    //
-    // echo(' / <span id="hide-score-columns" onclick="toggleVisibility(\'bitext-score-column\')">scores</span>');
-    // echo(' / <span id="hide-score-columns" onclick="toggleVisibility(\'bitext-ratio-column\')">scores</span>');
-
-
-    if ($tableStyle == 'vertical'){
-        if ($showScores || $showLengthRatio){
-            $query = make_query(['showScores' => 0, 'showLengthRatio' => 0]);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">scores</a>');
-        }
-        else{
-            $query = make_query(['showScores' => 1, 'showLengthRatio' => 1]);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>scores</strike></a>');
-        }
-    }
-    else{    
-        if ($showScores){
-            $query = make_query(['showScores' => 0]);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">scores</a>');
-        }
-        else{
-            $query = make_query(['showScores' => 1]);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>scores</strike></a>');
-        }
-        if ($showLengthRatio){
-            $query = make_query(['showLengthRatio' => 0]);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">length ratio</a>');
-        }
-        else{
-            $query = make_query(['showLengthRatio' => 1]);
-            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>length ratio</strike></a>');
-        }
-    }
-}
-
-function bitext_aligntype_menu(){
-    global $showAlignTypes;
-
-    // echo(' <span id="aligntype-menu" onclick="toggleVisibility(\'aligntype-options\');">.&nbsp;.&nbsp;.</span> ');
-    echo(' <span id="aligntype-menu" onclick="toggleElement(\'aligntype-options\');">.&nbsp;.&nbsp;.</span> ');
-
-    /*
-    if ($showAlignTypes){
-        $query = make_query(['showAlignTypes' => 0]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">align&nbsp;types</a>');
-    }
-    else{
-        $query = make_query(['showAlignTypes' => 1]);
-        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>align&nbsp;types</strike></a>');
-    }
-    */
-}
 
 
 ////////////////////
@@ -731,6 +508,7 @@ function bitext_navigation($offset, $showMax, $showStart=1){
 
     $lastentry = $offset + $showMax;
 
+    echo('<span id="bitext-navigation">');
     if ($offset){
         if ($showStart){
             $query = make_query(['offset' => 0]);
@@ -748,22 +526,7 @@ function bitext_navigation($offset, $showMax, $showStart=1){
     }
     $query = make_query(['offset' => $lastentry]);
     echo('<a id="next" href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"> next</a>');
-
-}
-
-function bitext_rating($bitext){
-    global $showMyRatings, $showRatings;
-    if ($showMyRatings){
-        echo(" / rate the overall bitext quality: ");
-        // print_rating_stars($bitextID,0);
-        printRatingStars($bitext,0);
-    }
-    if ($showRatings){
-        echo(" (");
-        // print_average_ratings($bitextID,0);
-        printAverageRatings($bitext,0);
-        echo(")");
-    }
+    echo('</span>');
 }
 
 
@@ -809,11 +572,6 @@ function print_bitext_table($bitext, $alignments, $offset=0){
         other_options_menu();
         echo('</div><br/>');
         
-        // bitext_score_options();
-        // bitext_rating_options();
-        // if (!$searchquery && ($tableStyle != 'edit')) bitext_aligntype_links($bitext, $alignType);
-        // echo('<br/>');
-
         if ($tableStyle == 'edit' && $allowEdit){
             $shown = print_editable_bitext_table($alignments,
                                                  $showScores, $showLengthRatio,
@@ -842,7 +600,13 @@ function print_bitext_table($bitext, $alignments, $offset=0){
         
         // hide next button if we are at the end of the document
         if ($shown < $showMaxAlignments){
-            echo '<script>var x = document.getElementById("next");x.style.visibility = "hidden";</script>';
+            if (! $offset){
+                echo '<script>var x = document.getElementById("bitext-navigation");x.style.display = "none";</script>';
+            }
+            else {
+                echo '<script>var x = document.getElementById("next");x.style.visibility = "hidden";</script>';
+                // echo '<script>var x = document.getElementById("next");x.style.color = "black";</script>';
+            }
         }
     }
 }

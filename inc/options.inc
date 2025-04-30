@@ -28,6 +28,11 @@ function bitext_options(){
 function score_options_menu(){
     global $showScores, $showLengthRatio;
 
+    // change visibility of entire columns in a table does not work on Safari nor on iOS
+    //
+    // echo(' / <span id="hide-score-columns" onclick="toggleVisibility(\'bitext-score-column\')">scores</span>');
+    // echo(' / <span id="hide-score-columns" onclick="toggleVisibility(\'bitext-ratio-column\')">scores</span>');
+
     echo('<span class="option-menu" id="score-option">');
     if ($showScores){
         $query = make_query(['showScores' => 0]);
@@ -157,6 +162,63 @@ function other_options_menu(){
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">show empty</a>');
     }
     echo('</span>');
+}
+
+
+function bitext_display_options(){
+    global $tableStyle;
+
+    if ($tableStyle == 'vertical'){
+        $query = make_query(['style' => 'horizontal']);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">horizontal</a>');
+    }
+    else{
+        $query = make_query(['style' => 'vertical']);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">vertical</a>');
+    }
+}
+
+function bitext_search_options(){
+    global $showSearch;
+    echo(' / <a class="clickable" id="search-form" onclick="toggleSearchForm();">search</a>');
+    /*
+    if ($showSearch){
+        $query = make_query(['showSearch' => 0]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">search</a>');
+    }
+    else{
+        $query = make_query(['showSearch' => 1]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>search</strike></a>');
+    }
+    */
+}
+
+function bitext_edit_links($bitext){
+    global $tableStyle, $showModified, $allowEdit;
+
+    if ($tableStyle == 'edit' && $allowEdit){
+        $query = make_query(['style' => 'horizontal', 'showModified' => 1]);
+        echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">stop editing</a>');
+    }
+    else{
+        if ($bitext->userDataExists()){
+            if ($showModified){
+                $query = make_query(['showModified' => 0]);
+                echo(' / modified / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">original</a>');
+            }
+            else{
+                $query = make_query(['showModified' => 1]);
+                echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">modified</a> / original');
+            }
+        }
+        if ($allowEdit){
+            $query = make_query(['style' => 'edit']);
+            echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">edit</a>');
+        }
+    }
+    if ($allowEdit){
+        echo('</span>');
+    }
 }
 
     
