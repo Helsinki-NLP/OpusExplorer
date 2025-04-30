@@ -531,7 +531,8 @@ function bitext_navigation($offset, $showMax, $showStart=1){
 
 
 function print_bitext($bitext, $type='', $offset=0){
-    global $showMaxAlignments, $showScores, $showLengthRatio, $showRatings, $showMyRatings, $showEmpty, $showAlignTypes;
+    global $showMaxAlignments, $showScores, $showLengthRatio, $showEmpty, $showAlignTypes;
+    global $showRatings, $showMyRatings;
     global $tableStyle, $allowEdit;
 
     if ($tableStyle == 'edit' && $allowEdit){
@@ -754,8 +755,8 @@ function print_horizontal_bitext_table($alignments,
     if ($fromDoc) print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
     // echo("&nbsp;&nbsp;$fromDoc");
     echo("</th>");
-    if ($showScores) echo('<th class="hbitext">score</th>');
-    if ($showLengthRatio) echo('<th class="hbitext">ratio</th>');
+    if ($showScores) echo('<th class="hbitext-score"></th>');
+    if ($showLengthRatio) echo('<th class="hbitext-score"></th>');
     echo("<th class='hbitext'>".$toDoc.'&nbsp;&nbsp;');
     if ($toDoc) print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
     echo("</th><th class='hbitext'>IDs</th>");
@@ -790,7 +791,8 @@ function print_horizontal_bitext_table($alignments,
         if ($showScores){
             $score = $row['alignerScore'];
             $color = score_color($score);
-            echo("</td><td bgcolor='$color' class='hbitext-score'>$score");
+            if (!$score) $score = "";
+            echo("</td><td bgcolor='$color' class='hbitext-score'><span class='bitext-alignscore'>$score</span>");
         }
         if ($showLengthRatio){
             $srcLen = mb_strlen($srcText);
@@ -801,7 +803,7 @@ function print_horizontal_bitext_table($alignments,
             }
             $color = score_color($ratio);
             $pretty_ratio = sprintf('%5.3f',$ratio);
-            echo("</td><td bgcolor='$color' class='hbitext-ratio'>$pretty_ratio");
+            echo("</td><td bgcolor='$color' class='hbitext-score'><span class='bitext-lengthratio'>$pretty_ratio</span>");
         }
             
         echo('</td><td class="hbitext-trg">');
@@ -851,9 +853,6 @@ function print_vertical_bitext_table($alignments,
     $toDoc = $bitext->toDoc;
     $bitextID = $bitext->id();
 
-    // $showScores=1;
-    // $showLengthRatio=1;
-
     global $langpair;
     global $DeleteSymbol;
 
@@ -879,9 +878,6 @@ function print_vertical_bitext_table($alignments,
         //print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 1);
     }
     echo("</th>");
-        
-    // if ($showLengthRatio || $showScores)
-    //     echo('<th class="vbitext">scores</th>');
     echo("</tr>");
     
 
@@ -931,11 +927,11 @@ function print_vertical_bitext_table($alignments,
         echo(implode('&nbsp;',$row['srcIDs']).'</td><td class="vbitext-src">');
         echo($srcText);
         if ($showScores and $score)
-            echo("</td><td bgcolor='$scoreColor' class='vbitext-score'>$score");
+            echo("</td><td bgcolor='$scoreColor' class='vbitext-score'><span class='bitext-alignscore'>$score</span>");
         elseif ($showLengthRatio or ($showScores and $score==0))
-            echo("</td><td bgcolor='$ratioColor' class='vbitext-score'>&nbsp;");
+            echo("</td><td bgcolor='$ratioColor' class='vbitext-score'>");
         else
-            echo("</td><td class='vbitext-score-empty'>&nbsp;");
+            echo("</td><td class='vbitext-score-empty'>");
         echo("</td></tr>");
 
         
@@ -946,11 +942,11 @@ function print_vertical_bitext_table($alignments,
         echo(implode('&nbsp;',$row['trgIDs']).'</td><td class="vbitext-trg">');
         echo($trgText);
         if ($showLengthRatio)
-            echo("</td><td bgcolor='$ratioColor' class='vbitext-ratio'>$pretty_ratio");
+            echo("</td><td bgcolor='$ratioColor' class='vbitext-ratio'><span class='bitext-lengthratio'>$pretty_ratio</span>");
         elseif ($showScores)
-            echo("</td><td bgcolor='$scoreColor' class='vbitext-ratio'>&nbsp;");
+            echo("</td><td bgcolor='$scoreColor' class='vbitext-ratio'>");
         else
-            echo("</td><td class='vbitext-ratio-empty'>&nbsp;");
+            echo("</td><td class='vbitext-ratio-empty'>");
         echo('</td></tr>');
 
         
@@ -997,12 +993,6 @@ function print_vertical_bitext_table($alignments,
 
             echo('<td class="vbitext-rating">');
             printRatingStars($bitext,$lid);
-            /*
-            if ($rating)
-                printRatingStars($bitext,$lid);
-            else
-                printStars($bitext->getAverageAlignmentRating($lid));
-            */
             echo('</td>');
             
         }
@@ -1053,8 +1043,8 @@ function print_editable_bitext_table($alignments,
 
     echo('<table class="hbitext">');
     echo("<tr><th class='hbitext'>$fromDoc</th>");
-    if ($showScores) echo('<th class="hbitext">score</th>');
-    if ($showLengthRatio) echo('<th class="hbitext">ratio</th>');
+    if ($showScores) echo('<th class="hbitext-score"></th>');
+    if ($showLengthRatio) echo('<th class="hbitext-score"></th>');
     echo("<th class='hbitext'>$toDoc</th>");
     if ($showMyRatings) echo('<th class="hbitext">my rating</th>');
     if ($showRatings) echo('<th class="hbitext">rating</th>');
@@ -1140,7 +1130,8 @@ function print_editable_bitext_table($alignments,
         if ($showScores){
             $score = $row['alignerScore'];
             $color = score_color($score);
-            echo("<td bgcolor='$color' class='hbitext-score'>$score</td>");
+            if (!$score) $score = "";
+            echo("<td bgcolor='$color' class='hbitext-score'><span class='bitext-alignscore'>$score</span></td>");
         }
         if ($showLengthRatio){
             $srcLen = mb_strlen($srcText);
@@ -1151,7 +1142,7 @@ function print_editable_bitext_table($alignments,
             }
             $color = score_color($ratio);
             $pretty_ratio = sprintf('%5.3f',$ratio);
-            echo("<td bgcolor='$color' class='hbitext-ratio'>$pretty_ratio</td>");
+            echo("<td bgcolor='$color' class='hbitext-ratio'><span class='bitext-lengthratio'>$pretty_ratio</span></td>");
         }
             
 

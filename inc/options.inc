@@ -34,6 +34,12 @@ function score_options_menu(){
     // echo(' / <span id="hide-score-columns" onclick="toggleVisibility(\'bitext-ratio-column\')">scores</span>');
 
     echo('<span class="option-menu" id="score-option">');
+    echo(' / <a class="clickable" id="alignscore-selector" onclick="toggleScore(\'alignscore\')">align&nbsp;scores</a>');
+    echo(' / <a class="clickable" id="lengthratio-selector" onclick="toggleScore(\'lengthratio\')">length&nbsp;ratio</a>');
+    echo('</span>');
+
+    /*
+    echo('<span class="option-menu" id="score-option">');
     if ($showScores){
         $query = make_query(['showScores' => 0]);
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">align&nbsp;scores</a>');
@@ -51,6 +57,8 @@ function score_options_menu(){
         echo(' / <a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'"><strike>length&nbsp;ratio</strike></a>');
     }
     echo('</span>');
+    */
+
 }
 
 

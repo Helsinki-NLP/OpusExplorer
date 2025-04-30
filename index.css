@@ -269,6 +269,13 @@ th.hbitext   {
     text-align: center;
 }
 
+th.hbitext-score   {
+    border: none;
+    padding: 0px;
+    text-align: center;
+    border-spacing: 0px;
+}
+
 td.hbitext {
     border: 1px dotted;
 }
@@ -308,11 +315,13 @@ td.hbitext-edit-trg {
 td.hbitext-score {
     border: none;
     text-align: center;
+    padding: 0px;
 }
 
 td.hbitext-ratio {
     border: none;
     text-align: center;
+    padding: 0px;
 }
 
 

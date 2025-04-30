@@ -25,7 +25,7 @@ if (isset($_GET['logout'])){
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="index.css?v59" type="text/css">
+  <link rel="stylesheet" href="index.css?v60" type="text/css">
   <script type="text/javascript">
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
@@ -50,10 +50,13 @@ if (isset($_GET['logout'])){
             }
         }
     }
+
     function displaySearchForm(style){
-        const x = document.getElementsByClassName('search-form');
-        for (var i = 0; i < x.length; i++){
-            x[i].style.display = style;
+        if (style){
+            const x = document.getElementsByClassName('search-form');
+            for (var i = 0; i < x.length; i++){
+                x[i].style.display = style;
+            }
         }
     }
     function toggleSearchForm(){
@@ -62,6 +65,27 @@ if (isset($_GET['logout'])){
         localStorage.setItem('displaySearchForm',newstyle);
         displaySearchForm(newstyle);
     }
+
+    function displayScore(scoreType,style){
+        if (style){
+            const x = document.getElementsByClassName('bitext-' + scoreType);
+            for (var i = 0; i < x.length; i++){
+                x[i].style.display = style;
+            }
+            const m = document.getElementById(scoreType + '-selector');
+            if (m){
+                m.style.color = style === 'inline' ? 'black' : 'blue';
+            }
+        }
+    }
+    function toggleScore(scoreType){
+        const scoreTypeKey = 'displayScore-' + scoreType;
+        const style = localStorage.getItem(scoreTypeKey);
+        var newstyle = style === 'none' ? 'inline' : 'none';
+        localStorage.setItem(scoreTypeKey,newstyle);
+        displayScore(scoreType,newstyle);
+    }
+
     function saveScrollPosition() {
       localStorage.setItem('scrollpos', window.scrollY);
       location.reload(); 
@@ -71,6 +95,8 @@ if (isset($_GET['logout'])){
         if (scrollpos) window.scrollTo(0, scrollpos);
         localStorage.setItem('scrollpos', 0);
         displaySearchForm(localStorage.getItem('displaySearchForm'));
+        displayScore('alignscore',localStorage.getItem('displayScore-alignscore'));
+        displayScore('lengthratio',localStorage.getItem('displayScore-lengthratio'));
         const selected = localStorage.getItem('option-menu');
         if (selected){
             const x = document.getElementById(selected);
