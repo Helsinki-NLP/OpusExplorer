@@ -568,8 +568,9 @@ function print_bitext_table($bitext, $alignments, $offset=0){
         rating_options_menu();
         aligntype_options_menu();
         other_options_menu();
-        echo('</div><br/>');
-        
+        echo('</div><br/><br/>');
+
+        echo('<div class="bitext-table">');
         if ($tableStyle == 'edit' && $allowEdit){
             $shown = print_editable_bitext_table($alignments, $showMyRatings, $showRatings);
         }
@@ -597,6 +598,8 @@ function print_bitext_table($bitext, $alignments, $offset=0){
                 echo '<script>var x = document.getElementById("next");x.style.visibility = "hidden";</script>';
             }
         }
+        //echo('</p>');
+        echo('</div>');
     }
 }
 
@@ -729,7 +732,6 @@ function print_horizontal_bitext_table($alignments,$showMyRatings=0, $showRating
     echo('<col id="bitext-srcid-col"/>');
     echo('<col id="bitext-srctxt-col"/>');
     echo('<col id="bitext-score-column"/>');
-    echo('<col id="bitext-ratio-col"/>');
     echo('<col id="bitext-trgtxt-col"/>');
     echo('<col id="bitext-trgid-col"/>');
     echo('</colgroup>');
@@ -739,7 +741,7 @@ function print_horizontal_bitext_table($alignments,$showMyRatings=0, $showRating
     if ($fromDoc) print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 1, 0);
     echo("</th>");
     echo('<th class="hbitext-score"></th>');
-    echo('<th class="hbitext-score"></th>');
+    // echo('<th class="hbitext-score"></th>');
     echo("<th class='hbitext'>".$toDoc.'&nbsp;&nbsp;');
     if ($toDoc) print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, '', 0, 1);
     echo("</th><th class='hbitext'>IDs</th>");
@@ -757,7 +759,9 @@ function print_horizontal_bitext_table($alignments,$showMyRatings=0, $showRating
         $srcText = implode(' ',$row['srcSents']);
         $trgText = implode(' ',$row['trgSents']);
 
+        // source language IDs
         // for search results: add a link to the bitext
+        
         if ($bitextID != $row['bitextID']){
             if ($lastBitextID != $row['bitextID']){
                 $bitextLink = bitext_link($bitext,$row['bitextID'], $corpus, $fromDoc, $toDoc);
@@ -765,27 +769,45 @@ function print_horizontal_bitext_table($alignments,$showMyRatings=0, $showRating
             }
         }
 
+        
+        // source language text
+
         echo('<tr><td class="hbitext-srcid">');
         if ($bitextLink) echo($bitextLink.'-');
         echo(implode('&nbsp;',$row['srcIDs']).'</td><td class="hbitext-src">');
         echo($srcText);
+        echo('</td>');
 
-            $score = $row['alignerScore'];
-            $color = score_color($score);
-            if (!$score) $score = "";
-            echo("</td><td bgcolor='$color' class='hbitext-score'><span class='bitext-alignscore'>$score</span>");
-            $srcLen = mb_strlen($srcText);
-            $trgLen = mb_strlen($trgText);
-            $ratio = 0;
-            if ($srcLen or $trgLen){
-                $ratio = $srcLen > $trgLen ? $trgLen / $srcLen : $srcLen / $trgLen;
-            }
-            $color = score_color($ratio);
-            $pretty_ratio = sprintf('%5.3f',$ratio);
-            echo("</td><td bgcolor='$color' class='hbitext-score'><span class='bitext-lengthratio'>$pretty_ratio</span>");
 
+        // scores (alignment score, length ratio)
+                
+        $score = $row['alignerScore'];
+        $scloreColor = score_color($score);
+        
+        $srcLen = mb_strlen($srcText);
+        $trgLen = mb_strlen($trgText);
+        $ratio = 0;
+        if ($srcLen or $trgLen){
+            $ratio = $srcLen > $trgLen ? $trgLen / $srcLen : $srcLen / $trgLen;
+        }
+        $ratioColor = score_color($ratio);
+        $pretty_ratio = sprintf('%5.3f',$ratio);
+        
+        echo("<td class='hbitext-score' bgcolor='$ratioColor'><table class='bitext-scores'>");
+        if ($score){
+            echo("<tr><td bgcolor='$scoreColor' class='bitext-scores'>");
+            echo("<span class='bitext-alignscore'>$score</span></td></tr>");
+        }
+        if ($ratio){
+            echo("<tr><td bgcolor='$ratioColor' class='bitext-scores'>");
+            echo("<span class='bitext-lengthratio'>$pretty_ratio</span></td></tr>");
+        }
+        echo('</table></td>');
+
+
+        // target language text
             
-        echo('</td><td class="hbitext-trg">');
+        echo('<td class="hbitext-trg">');
         echo($trgText);
         echo('</td><td class="hbitext-trgid">');
         if ($bitextLink) echo($bitextLink.'-');
@@ -794,13 +816,9 @@ function print_horizontal_bitext_table($alignments,$showMyRatings=0, $showRating
         $textOK = ( strpos($srcText, 'SENTENCE NOT FOUND') === false &&
                     strpos($trgText, 'SENTENCE NOT FOUND') === false );
 
-        /*
-        if ($showMyRatings && $textOK){
-            echo('</td><td class="centeralign">');
-            // print_rating_stars($bitextID,$row['linkID']);
-            printRatingStars($bitext,$row['linkID']);
-        }
-        */
+
+        // alignment rating stars
+
         if ($showRatings && $textOK){
             echo('</td><td class="hbitext-rating">');
             printAverageRatings($bitext,$row['linkID']);
@@ -892,7 +910,7 @@ function print_vertical_bitext_table($alignments,$showMyRatings=1, $showRatings=
             }
         }
         
-        // source language row
+        // source language row (+ alignment score)
         
         echo('<tr class="vbitext-src"><td class="vbitext-srcid">');
         // echo($row['linkID'].'/');
@@ -906,7 +924,7 @@ function print_vertical_bitext_table($alignments,$showMyRatings=1, $showRatings=
         echo("</td><td bgcolor='$scoreColor' class='vbitext-score'><span class='bitext-alignscore'>$score</span>");
         echo('</td></tr>');
         
-        // target language row
+        // target language row (+ length ratio)
         
         echo('<tr class="vbitext-trg"><td class="vbitext-trgid">');
         if ($bitextLink) echo($bitextLink.'-');
@@ -1008,7 +1026,7 @@ function print_editable_bitext_table($alignments,$showMyRatings=0, $showRatings=
     echo('<table class="hbitext">');
     echo("<tr><th class='hbitext'>$fromDoc</th>");
     echo('<th class="hbitext-score"></th>');
-    echo('<th class="hbitext-score"></th>');
+    // echo('<th class="hbitext-score"></th>');
     echo("<th class='hbitext'>$toDoc</th>");
     if ($showMyRatings) echo('<th class="hbitext">my rating</th>');
     if ($showRatings) echo('<th class="hbitext">rating</th>');
@@ -1090,7 +1108,35 @@ function print_editable_bitext_table($alignments,$showMyRatings=0, $showRatings=
             echo('</tr>');
         }
         echo('</table></td>');
-            
+
+
+                // scores (alignment score, length ratio)
+                
+        $score = $row['alignerScore'];
+        $scloreColor = score_color($score);
+        
+        $srcLen = mb_strlen($srcText);
+        $trgLen = mb_strlen($trgText);
+        $ratio = 0;
+        if ($srcLen or $trgLen){
+            $ratio = $srcLen > $trgLen ? $trgLen / $srcLen : $srcLen / $trgLen;
+        }
+        $ratioColor = score_color($ratio);
+        $pretty_ratio = sprintf('%5.3f',$ratio);
+        
+        echo("<td class='hbitext-score' bgcolor='$ratioColor'><table class='bitext-scores'>");
+        if ($score){
+            echo("<tr><td bgcolor='$scoreColor' class='bitext-scores'>");
+            echo("<span class='bitext-alignscore'>$score</span></td></tr>");
+        }
+        if ($ratio){
+            echo("<tr><td bgcolor='$ratioColor' class='bitext-scores'>");
+            echo("<span class='bitext-lengthratio'>$pretty_ratio</span></td></tr>");
+        }
+        echo('</table></td>');
+
+
+        /*
         $score = $row['alignerScore'];
         $color = score_color($score);
         if (!$score) $score = "";
@@ -1104,6 +1150,9 @@ function print_editable_bitext_table($alignments,$showMyRatings=0, $showRatings=
         $color = score_color($ratio);
         $pretty_ratio = sprintf('%5.3f',$ratio);
         echo("<td bgcolor='$color' class='hbitext-ratio'><span class='bitext-lengthratio'>$pretty_ratio</span></td>");
+        */
+
+        
 
         echo('<td class="hbitext-edit-trg"><table class="segment">');
         for ($x=0; $x<count($row['trgIDs']);$x++){

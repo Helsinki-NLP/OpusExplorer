@@ -25,7 +25,7 @@ if (isset($_GET['logout'])){
   <title>OPUS Explorer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="index.css?v60" type="text/css">
+  <link rel="stylesheet" href="index.css?v62" type="text/css">
   <script type="text/javascript">
 	function setStyle(obj,style,value){
 		obj.style[style] = value;
@@ -178,7 +178,7 @@ $resourceView = get_param('resourceView','langMatrix');
 */
 
 $allowEdit            = $user != 'guest' ? in_array($corpus, $ALLOW_EDIT) : 0;
-// $allowEdit = 1;
+$allowEdit = 1;
 $showAlignTypes       = get_param('showAlignTypes',$SHOW_ALIGN_TYPES);
 $allowOtherAlignTypes = in_array($corpus, $ALLOW_EDIT);
 $allowRandomLinks     = in_array($corpus, $ALLOW_EDIT);
@@ -233,7 +233,6 @@ elseif ($srclang && $trglang){
         else{
             echo('<div class="rightalign">');
             bitext_search_options();
-            // echo(' / <a class="clickable" onclick="toggleElementClass(\'search-form\');">search</a>');
             echo('</div>');
             echo('</br><hr>');
             print_document_list($bitext, $offset, $fromDocQuery, $toDocQuery);
@@ -242,7 +241,6 @@ elseif ($srclang && $trglang){
     else{
         echo('<div class="rightalign">');
         bitext_search_options();
-        // echo(' / <a class="clickable" onclick="toggleElementClass(\'search-form\');">search</a>');
         echo('</div>');
         echo('</br><hr>');
         print_corpus_list($bitext);
