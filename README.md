@@ -46,3 +46,7 @@ Language codes:
 * https://github.com/Daniel-KM/Simple-ISO-639-3
 * https://www.php.net/manual/en/locale.getdisplayscript.php
 * https://stackoverflow.com/questions/69002935/convert-iso-639-1-into-a-language-name-in-local-language-with-php
+
+## Acknowledgements
+
+This project has received funding from the European Union’s Horizon Europe research and innovation programme under grant agreement No 101070350 and from UK Research and Innovation (UKRI) under the UK government’s Horizon Europe funding guarantee [grant number 10052546]
