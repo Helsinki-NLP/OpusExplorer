@@ -140,13 +140,13 @@ class bitext {
 
     public function corpora($latest=0){
         $corpora = new corpora($this, $this->index);
-        $corpora->fetch($latest);
+        $corpora->fetch(['latest' => $latest]);
         return $corpora;        
     }
 
     public function releases($latest=0){
         $corpora = new corpusReleases($this, $this->index);
-        $corpora->fetch($latest);
+        $corpora->fetch(['latest' => $latest]);
         return $corpora;        
     }
 
@@ -163,7 +163,10 @@ class bitext {
             
     public function documents($offset=0, $limit=10, $fromDocQuery='', $toDocQuery=''){
         $docpairs = new documentPairs($this, $this->index);
-        $docpairs->fetch($fromDocQuery, $toDocQuery, $limit, $offset);
+        $docpairs->fetch([ 'fromDocQuery' => $fromDocQuery,
+                           'toDocQuery'   => $toDocQuery,
+                           'limit'        => $limit,
+                           'offset'       => $offset ]);
         return $docpairs;
     }
 
@@ -177,13 +180,19 @@ class bitext {
         
     public function alignments($type, $limit=10, $offset=0){
         $alignments = new alignments($this, $this->index);
-        $alignments->fetch($type, $limit, $offset);
+        $alignments->fetch([ 'type'   => $type,
+                             'limit'  => $limit,
+                             'offset' => $offset ]);
         return $alignments;
     }
 
     public function search($query, $side, $limit=10, $offset=0, $orderByLinkID=0){
         $alignments = new alignmentSearchResult($this, $this->index);
-        $alignments->fetch($query,$side,$limit,$offset,$orderByLinkID);
+        $alignments->fetch([ 'query' => $query,
+                             'side'  => $side,
+                             'limit' => $limit,
+                             'offset' => $offset,
+                             'orderByLinkID' => $orderByLinkID ]);
         return $alignments;
     }
 
@@ -275,7 +284,9 @@ class corpora {
         $this->bitext = $bitext;
         $this->index = $index;
     }
-    public function fetch($latest=0){
+    public function fetch($params){
+        $latest = array_key_exists('latest', $params) ? $params['latest'] : 0;
+        // list($latest) = func_get_args();
         $this->searchResults = $this->index->getCorpora($this->bitext->corpus, $this->bitext->version,
                                                         $this->bitext->srclang, $this->bitext->trglang,
                                                         $this->bitext->opusSrclang, $this->bitext->opusTrglang,
@@ -300,7 +311,8 @@ class corpusReleases extends corpora{
         $this->bitext = $bitext;
         $this->index = $index;
     }
-    public function fetch($latest=0){
+    public function fetch($params){
+        $latest = array_key_exists('latest', $params) ? $params['latest'] : 0;
         $this->searchResults = $this->index->getCorpusReleases($this->bitext->corpus, $this->bitext->version,
                                                                $this->bitext->srclang, $this->bitext->trglang,
                                                                $this->bitext->opusSrclang, $this->bitext->opusTrglang,
@@ -317,7 +329,13 @@ class corpusReleases extends corpora{
         
 class documentPairs extends corpora{
     
-    public function fetch($fromDocQuery='', $toDocQuery='', $limit=10, $offset=0){
+    // public function fetch($fromDocQuery='', $toDocQuery='', $limit=10, $offset=0){
+    public function fetch($params){
+        $fromDocQuery = array_key_exists('fromDocQuery', $params) ? $params['fromDocQuery'] : '';
+        $toDocQuery   = array_key_exists('toDocQuery', $params) ? $params['toDocQuery'] : '';
+        $limit        = array_key_exists('limit', $params) ? $params['limit'] : 10;
+        $offset       = array_key_exists('offset', $params) ? $params['offset'] : 0;
+        
         $corpus = $this->bitext->corpus;
         $version = $this->bitext->version;
         $this->searchResults = $this->index->getDocuments($this->bitext->corpus, $this->bitext->version,
@@ -344,7 +362,11 @@ class documentPairs extends corpora{
 
 class alignments extends documentPairs {
     
-    public function fetch($type, $limit, $offset){
+    // public function fetch($type='all', $limit=10, $offset=0){
+    public function fetch($params){
+        $type   = array_key_exists('type', $params) ? $params['type'] : 'all';
+        $limit  = array_key_exists('limit', $params) ? $params['limit'] : 10;
+        $offset = array_key_exists('offset', $params) ? $params['offset'] : 0;
         $this->searchResults = $this->index->getAlignments($this->bitext->id(), $type, $limit, $offset);
     }
 
@@ -389,7 +411,14 @@ class alignmentSearchResult extends alignments {
 
     private $searchside;
     
-    public function fetch($query, $side, $limit=10, $offset=0, $orderByLinkID=0){
+    // public function fetch($query, $side, $limit=10, $offset=0, $orderByLinkID=0){
+    public function fetch($params){
+        $query         = array_key_exists('query', $params) ? $params['query'] : '';
+        $side          = array_key_exists('side', $params) ? $params['side'] : '';
+        $limit         = array_key_exists('limit', $params) ? $params['limit'] : 10;
+        $offset        = array_key_exists('offset', $params) ? $params['offset'] : 0;
+        $orderByLinkID = array_key_exists('orderByLinkID', $params) ? $params['orderByLinkID'] : 0;
+
         $this->searchResults = $this->index->searchAlignments($query, $side,
                                                               $this->bitext->corpusID(),
                                                               $this->bitext->id(),
@@ -927,7 +956,7 @@ function print_editable_bitext_table($alignments,
             echo('</tr>');
         }
         echo('</table></td>');
-            
+
         if ($showScores){
             $score = $row['alignerScore'];
             $color = score_color($score);
