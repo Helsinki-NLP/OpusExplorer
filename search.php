@@ -76,7 +76,7 @@ $fetchSentenceIdTime = 0;
 $fetchSentenceTime = 0;
 
 if ($results){
-    echo("<table border='1'>\n");
+    echo("<table class='hbitext'>\n");
     while ($row = $results->fetchArray(SQLITE3_NUM)) {
         $bitextID=$row[0];
         $srcID=$row[1];
@@ -110,9 +110,9 @@ if ($results){
             $fetchSentenceTime += microtime(true) - $start;
         }
 
-        echo("<tr>\n<td>$bitextID</td>\n<td style='text-align: right'>");
+        echo("<tr>\n<td class='hbitext-srcid'>$bitextID</td>\n<td class='hbitext-src'>");
         echo(implode(' ',$srcSents));
-        echo("</td>\n<td>");
+        echo("</td>\n<td class='hbitext-trg'>");
         echo(implode(' ',$trgSents));
         echo("\n</tr>\n");
     }

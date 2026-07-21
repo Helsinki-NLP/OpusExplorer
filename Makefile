@@ -1,5 +1,6 @@
 
 
+
 DB_STORAGE := https://object.pouta.csc.fi/OPUS-index
 DB_HOME    := /media/OPUS/OpusIndex
 GIT_HOME   := https://raw.githubusercontent.com/Helsinki-NLP/OpusIndex/refs/heads/master/
@@ -12,6 +13,10 @@ REQUIRED_FTSDB_FILES   := $(patsubst %,${DB_HOME}/%.fts5.db,\
 
 REDOWNLOAD_INSTALLED_LINKDB_FILES := $(patsubst %.db,%.redownload,${INSTALLED_LINKDB_FILES})
 
+
+all:
+	${MAKE} download-all
+	${MAKE} bitext-db
 
 download-all: ${AVAILABLE_LINKDB_FILES}
 	${MAKE} download-required-fts-dbs

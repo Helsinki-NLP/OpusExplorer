@@ -1,9 +1,9 @@
 <?php // -*-php-*-
 
 
-// $DB_DIR = '/media/OpusIndex/';
-// $DB_DIR = '/media/OPUS-MT/OpusIndex/';
-$DB_DIR = '/media/OPUS/OpusIndex/';
+// $DB_DIR = '/media/OPUS/OpusIndex/';
+$DB_DIR = '/media/OPUS/synOpusIndex/';
+// $DB_DIR = '/media/OPUS/OpusBenchIndex/';
 
 $USER_DATADIR      = $DB_DIR;
 $USER_NAME_FILE    = $USER_DATADIR.'/users.php';
@@ -12,9 +12,11 @@ $ALLOW_NEW_USERS   = 1;
 $ALLOW_GUEST_USERS = 1;
 
 $DOCUMENT_LIST_LIMIT = 20;
-$SHOW_ALIGNMENTS_LIMIT = 25;
+$SHOW_ALIGNMENTS_LIMIT = 10;
 
 $ALIGN_TYPES = array('1-1','1-2','2-1','1-0','0-1');
+// $SHOW_ALIGN_TYPES = 1;
+$SHOW_ALIGN_TYPES = 0;
 
 // $default_srclang = 'fi';
 // $default_trglang = 'sv';

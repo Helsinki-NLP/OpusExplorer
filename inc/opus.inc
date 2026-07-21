@@ -3,11 +3,12 @@
 
 function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc,$toDoc,$searchquery,$alignType){
     global $bitext, $bitextID, $opusLangpair;
+    global $SHOW_ALIGNMENTS_LIMIT;
 
-    echo '<form action="index.php" method="get" style="padding: 0px;margin: 0px;">';
     $query = make_query(['srclang' => '', 'trglang' => '', 'langpair' => '', 'opusLangpair' => '',
                          'corpus' => '', 'version' => '', 'fromDoc' => '', 'toDoc' => '',
                          'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
+                         'showMaxAlignments' => $SHOW_ALIGNMENTS_LIMIT,
                          'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">OPUS</a> / ');
 
@@ -17,6 +18,7 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
         $query = make_query(['corpus' => '', 'version' => '', 'fromDoc' => '', 'toDoc' => '',
                              'opusLangpair' => $opusLangpair,
                              'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
+                             'showMaxAlignments' => $SHOW_ALIGNMENTS_LIMIT,
                              'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
         echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$langpair.'</a> / ');
 
@@ -25,9 +27,11 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
                 if ($l == $opusLangpair)
                     echo($l.' / ');
                 else{
-                    $query = make_query(['corpus' => '', 'version' => '', 'fromDoc' => '', 'toDoc' => '',
+                    $query = make_query(['corpus' => '', 'version' => '',
+                                         'fromDoc' => '', 'toDoc' => '',
                                          'opusLangpair' => $l,
                                          'aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
+                                         'showMaxAlignments' => $SHOW_ALIGNMENTS_LIMIT,
                                          'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
                     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$l.'</a> / ');
                 }
@@ -36,19 +40,21 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
 
         if ($corpus){
             $query = make_query(['version' => '', 'fromDoc' => '', 'toDoc' => '', 'offset' => 0,
+                                 'showMaxAlignments' => $SHOW_ALIGNMENTS_LIMIT,
                                  'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
             echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.'</a> / ');
 
             if ($version){
                 $query = make_query(['fromDoc' => '', 'toDoc' => '', 'offset' => 0,
+                                     'showMaxAlignments' => $SHOW_ALIGNMENTS_LIMIT,
                                      'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
                 echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$version.'</a> / ');
         
                 if ($fromDoc && $toDoc){
                     $query = make_query(['aligntype' => '', 'offset' => 0, 'sortLinkIDs' => 0,
+                                         'showMaxAlignments' => $SHOW_ALIGNMENTS_LIMIT,
                                          'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
                     echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$fromDoc.'</a> / ');
-                    if (! $searchquery) bitext_browsing_links($bitext, $alignType);
                 }
             }
         }
@@ -61,18 +67,22 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
             set_param('bitextID',$bitextID);
             print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $searchquery);
         }
+        // print_search_form($langpair, $corpus, $version, $fromDoc, $toDoc, $bitextID, $searchquery);
     }
     elseif ($corpus && $version){
         $query = make_query(['version' => '', 'fromDoc' => '', 'toDoc' => '', 'offset' => 0,
+                             'showMaxAlignments' => $SHOW_ALIGNMENTS_LIMIT,
                              'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
         echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$corpus.'</a> / ');
         $query = make_query(['fromDoc' => '', 'toDoc' => '', 'offset' => 0,
+                             'showMaxAlignments' => $SHOW_ALIGNMENTS_LIMIT,
                              'search' => '', 'fromDocQuery' => '', 'toDocQuery' => '']);
         echo('<a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$version.'</a> / ');
     }
     else{
         $latest = 1;
         $corpora = $bitext->corpora($latest);
+        echo '<form action="index.php" method="get" style="padding: 0px;margin: 0px;display: inline;">';
         echo '<input type="hidden" id="showLatest" name="showLatest" value="1">';
         echo '<select name="corpus" id="corpus" onchange="this.form.submit()">';
         echo('<option value=""> -- select corpus -- </option>');
@@ -86,8 +96,8 @@ function print_bitext_menu($corpus,$version,$srclang,$trglang,$langpair,$fromDoc
                         echo('<option value="'.$row['corpus'].'">'.$row['corpus'].'</option>');
         }
         echo '</select>';
+        echo '</form>';
     }
-    echo '</form>';
 }
 
 
@@ -98,10 +108,23 @@ function print_document_list($bitext, $offset=0, $fromDocQuery='', $toDocQuery='
     $documents = $bitext->documents($offset, $showMaxDocuments, $fromDocQuery, $toDocQuery);
     
     echo 'select a source document: ';
-    bitext_navigation($offset, $showMaxDocuments, false);
-    bitext_rating_options();
+    bitext_navigation($offset, $showMaxDocuments, true);
+    //bitext_rating_options();
+    //bitext_average_rating_option();
     echo('<br/><br/><table class="doclist">');
-        
+    echo '<tr><td class="doclist"></td>';
+    echo '<td class="docliststars">average rating</td>';
+    echo '<td class="docliststars">my average rating</td>';
+    echo '</td></tr>';
+    /*
+    echo '<tr><td class="doclist"></td><td class="docliststars">';
+    bitext_user_rating_option();
+    echo '</td>';
+    echo '<td class="docliststars">';
+    bitext_average_rating_option();
+    echo '</td></tr>';
+    */
+    
     $count = 0;
     $differentNames = 0;
     while ($row = $documents->next()) {
@@ -131,19 +154,40 @@ function print_document_list($bitext, $offset=0, $fromDocQuery='', $toDocQuery='
             echo '<td class="doclist">'.$link.$row['toDoc'].'</a></td>';
         }
         // echo '<tr><td class="doclist"><a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">'.$docpair.'</a></td>';
+
+        echo('<td class="docliststars">');
+        $rating = $bitext->getAverageBitextRating($bitextID);
+        if ($rating){
+            printStars($rating);
+        }
+        echo('</td>');
+
+        echo('<td class="docliststars">');
+        $rating = $bitext->getMyBitextRating($bitextID);
+        if ($rating){
+            printStars($rating);
+        }
+        echo('</td></tr>');
+
+        /*        
+        echo('<td class="docliststars">');
         if ($showMyRatings){
             $rating = $bitext->getMyBitextRating($bitextID);
-            echo('<td class="docliststars">');
-            printStars($rating);
-            echo('</td>');
+            if ($rating){
+                printStars($rating);
+            }
         }
+        echo('</td>');
+
+        echo('<td class="docliststars">');
         if ($showRatings){
             $rating = $bitext->getAverageBitextRating($bitextID);
-            echo('<td class="docliststars">');
-            printStars($rating);
-            echo('</td>');
+            if ($rating){
+                printStars($rating);
+            }
         }
-        echo("</tr>\n");
+        echo("</td></tr>\n");
+        */
     }
     if ($count >= $showMaxDocuments || $fromDocQuery || $toDocQuery){
         // $queryValue = $fromDocQuery ? $fromDocQuery : $bitext->srclang.'/%';
@@ -285,28 +329,28 @@ function print_langpair_matrix($langpairs){
         echo(' / language matrix<br/><br/>');
     }
     
-    echo('<table><tr><th></th>');
+    echo('<table class="bitext-matrix"><tr><th class="bitext-matrix"></th>');
     foreach ($trglangs as $trglang => $count){
         $trglangname = Locale::getDisplayName($trglang, 'en');
         $trglangs[$trglang] = $trglangname;
         // echo('<th>'.$trglangname.'</th>');
-        echo('<th>'.$trglang.'</th>');
+        echo('<th class="bitext-matrix">'.$trglang.'</th>');
     }
     echo('</tr>');
     foreach ($srclangs as $srclang => $srccount){
         $srclangname = Locale::getDisplayName($srclang, 'en');
         // echo('<tr><th>'.$srclangname.'</th>');
-        echo('<tr><th>'.$srclang.'</th>');
+        echo('<tr><th class="bitext-matrix">'.$srclang.'</th>');
         foreach ($trglangs as $trglang => $trglangname){
             $langpair = "$srclang-$trglang";
             if (array_key_exists($langpair,$langpairs)){
                 $query = make_query(['langpair' => $langpair, 'search' => '']);
-                echo '<td><a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">';
+                echo '<td class="bitext-matrix"><a href="'.$_SERVER['PHP_SELF'].'?'.SID.'&'.$query.'">';
                 // echo $langpair;
                 echo 'index</a></td>'."\n";
             }
             else{
-                echo('<td></td>');
+                echo('<td class="bitext-matrix"></td>');
             }
         }
         echo('</tr>');
