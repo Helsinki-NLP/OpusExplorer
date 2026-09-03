@@ -315,8 +315,10 @@ function print_langpair_matrix($langpairs){
 
     foreach ($langpairs as $langpair => $val){
         list($srclang,$trglang) = explode('-',$langpair);
-        $srclangs[$srclang]++;
-        $trglangs[$trglang]++;
+        $srclangs[$srclang] = isset($srclangs[$srclang]) ? $srclangs[$srclang]+1 : 1;
+        $trglangs[$trglang] = isset($trglangs[$trglang]) ? $trglangs[$trglang]+1 : 1;
+        // $srclangs[$srclang]++;
+        // $trglangs[$trglang]++;
     }
     
     ksort($srclangs);
